@@ -75,6 +75,10 @@ export class AuthService {
 
     const { email, password } = signupDto
 
+    if (!email || !password) {
+      throw new BadRequestException('OTP is incorrect or expired!')
+    }
+
     // Check if email is already exists
     const existEmail = await this.userService.findOne({
       email,

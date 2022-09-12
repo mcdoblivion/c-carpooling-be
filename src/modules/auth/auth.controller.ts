@@ -36,6 +36,16 @@ export class AuthController {
     }
   }
 
+  @Post('verify-signup')
+  async verifySignup(@Body('otp') otp: string) {
+    try {
+      return await this.authService.createNewAccount(otp)
+    } catch (error) {
+      this.logger.error('Error when verifying signup!')
+      throw error
+    }
+  }
+
   @UseGuards(LocalAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('login')
