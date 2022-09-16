@@ -1,2 +1,7 @@
 export * from './2FA-method'
+export * from './address-type'
+export * from './direction-type'
+export * from './fuel-type'
+export * from './request-status'
 export * from './role'
+export * from './wallet-action-type'
