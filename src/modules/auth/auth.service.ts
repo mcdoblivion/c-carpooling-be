@@ -136,7 +136,14 @@ export class AuthService {
   }
 
   async validateUserFromJwt(userId: number) {
-    const user = await this.userService.findById(userId)
+    const user = await this.userService.findOne(
+      { id: userId },
+      {
+        relations: {
+          userProfile: true,
+        },
+      },
+    )
 
     if (!user) {
       throw new Error(`User ${userId} not found!`)
@@ -211,20 +218,34 @@ export class AuthService {
     // }
   }
 
-  async login(user: { id: number; email: string; username: string }) {
+  async login(
+    user: { id: number; email: string; username: string },
+    otp: string,
+  ) {
+    if (otp) {
+      const { userId } =
+        (await this.cacheManager.get<{ userId: number }>(otp)) || {}
+
+      if (!userId) {
+        throw new BadRequestException('OTP is invalid of expired!')
+      }
+
+      this.cacheManager.del(otp)
+
+      user.id = userId
+    }
+
     const existUser = await this.userService.findOne({ id: user.id })
     if (!existUser) {
       throw new BadRequestException('Invalid Login ID or Password')
     }
 
     const twoFAMethod = existUser['2FAMethod']
-    if (twoFAMethod === TwoFAMethod.OFF) {
+    if (twoFAMethod === TwoFAMethod.OFF || otp) {
       return this.generateAccessToken(user)
     }
 
-    return {
-      twoFAMethod,
-    }
+    return this.sendOtp({ twoFAMethod, usernameOrEmail: user.email })
   }
 
   generateAccessToken(user: any) {
@@ -244,7 +265,7 @@ export class AuthService {
 
     if (!existUser) {
       throw new BadRequestException(
-        'Invalid Login ID or email. Please try again.',
+        'Invalid username or email. Please try again.',
       )
     }
 

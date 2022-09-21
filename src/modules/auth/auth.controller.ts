@@ -13,7 +13,6 @@ import { ConfigService } from '@nestjs/config'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
 import { UserEntity } from 'src/typeorm/entities'
 import { AuthService } from './auth.service'
-import { SendOtpDto } from './dto/otp.dto'
 import { SignupDto } from './dto/signup.dto'
 import { LocalAuthGuard } from './guards/local-auth.guard'
 
@@ -49,9 +48,9 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(@Request() req: { user: UserEntity }) {
+  async login(@Request() req: { user: UserEntity }, @Body('otp') otp: string) {
     try {
-      return await this.authService.login(req.user)
+      return await this.authService.login(req.user, otp)
     } catch (error) {
       this.logger.error('Error when login!')
       throw error
@@ -65,17 +64,6 @@ export class AuthController {
       return await this.authService.validateGoogleToken(token)
     } catch (error) {
       this.logger.error('Error when validating google token!')
-      throw error
-    }
-  }
-
-  @Post('send-otp')
-  @HttpCode(HttpStatus.OK)
-  async sendOtp(@Body() sendOtpDto: SendOtpDto) {
-    try {
-      return await this.authService.sendOtp(sendOtpDto)
-    } catch (error) {
-      this.logger.error('Error when sending OTP!')
       throw error
     }
   }
