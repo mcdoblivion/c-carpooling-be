@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   CACHE_MANAGER,
+  forwardRef,
   Inject,
   Injectable,
   LoggerService,
@@ -23,6 +24,7 @@ import { SignupDto } from './dto/signup.dto'
 export class AuthService {
   constructor(
     private readonly config: ConfigService,
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly mailsService: MailService,
@@ -223,16 +225,10 @@ export class AuthService {
     otp: string,
   ) {
     if (otp) {
-      const { userId } =
-        (await this.cacheManager.get<{ userId: number }>(otp)) || {}
-
-      if (!userId) {
-        throw new BadRequestException('OTP is invalid of expired!')
+      const userId = await this.verifyOtp(otp)
+      if (userId !== user.id) {
+        throw new BadRequestException(`OTP is invalid or expired!`)
       }
-
-      this.cacheManager.del(otp)
-
-      user.id = userId
     }
 
     const existUser = await this.userService.findOne({ id: user.id })
@@ -300,5 +296,22 @@ export class AuthService {
     )
 
     return 'OTP has been sent!'
+  }
+
+  /**
+   * @param otp OTP has been sent to 2FA method
+   * @returns user ID
+   */
+  async verifyOtp(otp: string) {
+    const { userId } =
+      (await this.cacheManager.get<{ userId: number }>(otp)) || {}
+
+    if (!userId) {
+      throw new BadRequestException(`OTP is invalid or expired!`)
+    }
+
+    await this.cacheManager.del(otp)
+
+    return userId
   }
 }

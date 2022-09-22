@@ -1,4 +1,4 @@
-import { applyDecorators, UseGuards } from '@nestjs/common'
+import { applyDecorators, SetMetadata, UseGuards } from '@nestjs/common'
 import { Role } from 'src/typeorm/enums'
 import { CompletedProfileGuard } from '../guards/completed-profile.guard'
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
@@ -15,3 +15,5 @@ export const Auth = (...roles: Role[]) => {
 export const AuthWithoutCompletedProfile = (...roles: Role[]) => {
   return applyDecorators(Roles(...roles), UseGuards(JwtAuthGuard, RolesGuard))
 }
+
+export const Public = () => SetMetadata('isPublic', true)

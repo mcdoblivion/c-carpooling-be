@@ -7,6 +7,15 @@ export class CompletedProfileGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    const isPublic = this.reflector.get<boolean>(
+      'isPublic',
+      context.getHandler(),
+    )
+
+    if (isPublic) {
+      return true
+    }
+
     const { user } =
       (context.switchToHttp().getRequest() as { user: UserEntity }) || {}
 

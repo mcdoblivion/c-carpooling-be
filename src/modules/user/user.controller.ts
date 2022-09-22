@@ -2,10 +2,13 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Inject,
   LoggerService,
   Param,
   ParseIntPipe,
+  Post,
   Put,
 } from '@nestjs/common'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
@@ -14,8 +17,9 @@ import { SearchDto } from 'src/helpers/search.dto'
 import { UserEntity } from 'src/typeorm/entities'
 import { Role } from 'src/typeorm/enums'
 import { SearchResult } from 'src/types'
-import { Auth } from '../auth/decorators/auth.decorator'
+import { Auth, Public } from '../auth/decorators/auth.decorator'
 import { BaseController } from '../base/base.controller'
+import { CreateNewPasswordDto } from './dto/create-new-password.dto'
 import { UpdateUserPasswordDto } from './dto/update-user.dto'
 import { UserService } from './user.service'
 
@@ -53,6 +57,13 @@ export class UserController implements BaseController<UserEntity> {
 
   create(createDto: Record<string, any>): Promise<UserEntity> {
     throw new Error('Method not implemented.')
+  }
+
+  @Public()
+  @Post('password')
+  @HttpCode(HttpStatus.OK)
+  createNewPassword(@Body() createNewPasswordDto: CreateNewPasswordDto) {
+    return this.usersService.createNewPassword(createNewPasswordDto)
   }
 
   @Put(':id')

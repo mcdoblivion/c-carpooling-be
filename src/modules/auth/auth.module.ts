@@ -1,16 +1,16 @@
-import { Module } from '@nestjs/common'
-import { AuthService } from './auth.service'
-import { AuthController } from './auth.controller'
-import { UserModule } from '../user/user.module'
-import { LocalStrategy } from './strategies/local.strategy'
-import { JwtModule } from '@nestjs/jwt'
+import { forwardRef, Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
-import { JwtStrategy } from './strategies/jwt.strategy'
+import { JwtModule } from '@nestjs/jwt'
 import { OAuth2Client } from 'google-auth-library'
+import { UserModule } from '../user/user.module'
+import { AuthController } from './auth.controller'
+import { AuthService } from './auth.service'
+import { JwtStrategy } from './strategies/jwt.strategy'
+import { LocalStrategy } from './strategies/local.strategy'
 
 @Module({
   imports: [
-    UserModule,
+    forwardRef(() => UserModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -24,5 +24,6 @@ import { OAuth2Client } from 'google-auth-library'
   ],
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy, OAuth2Client],
+  exports: [AuthService],
 })
 export class AuthModule {}
