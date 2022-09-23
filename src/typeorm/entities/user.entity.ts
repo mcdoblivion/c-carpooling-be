@@ -22,9 +22,27 @@ import { Role, TwoFAMethod } from '../enums'
 import { BaseEntity } from './base.entity'
 
 @Entity({ name: 'users' })
-@Index(['username', 'deletedAt'], { unique: true })
-@Index(['email', 'deletedAt'], { unique: true })
-@Index(['phoneNumber', 'deletedAt'], { unique: true })
+@Index(['username', 'deletedAt'], {
+  unique: true,
+  where: '"deletedAt" IS NOT NULL',
+})
+@Index(['email', 'deletedAt'], {
+  unique: true,
+  where: '"deletedAt" IS NOT NULL',
+})
+@Index(['phoneNumber', 'deletedAt'], {
+  unique: true,
+  where: '"deletedAt" IS NOT NULL',
+})
+@Index(['username'], {
+  unique: true,
+  where: '"deletedAt" IS NULL',
+})
+@Index(['email'], { unique: true, where: '"deletedAt" IS NULL' })
+@Index(['phoneNumber'], {
+  unique: true,
+  where: '"deletedAt" IS NULL',
+})
 export class UserEntity extends BaseEntity {
   @Column({
     type: 'varchar',
@@ -47,7 +65,7 @@ export class UserEntity extends BaseEntity {
 
   @Column({
     type: 'varchar',
-    length: 10,
+    length: 15,
     nullable: true,
   })
   phoneNumber: string

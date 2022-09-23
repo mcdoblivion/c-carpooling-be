@@ -12,8 +12,7 @@ export const Auth = (...roles: Role[]) => {
   )
 }
 
-export const AuthWithoutCompletedProfile = (...roles: Role[]) => {
-  return applyDecorators(Roles(...roles), UseGuards(JwtAuthGuard, RolesGuard))
-}
+export const AuthWithoutCompletedProfile = () =>
+  SetMetadata('requireCompletedProfile', false)
 
 export const Public = () => SetMetadata('isPublic', true)

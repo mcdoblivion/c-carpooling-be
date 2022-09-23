@@ -1,4 +1,44 @@
-import { IsNotEmpty, IsString, Length } from 'class-validator'
+import { Type } from 'class-transformer'
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsPhoneNumber,
+  IsString,
+  Length,
+  ValidateNested,
+} from 'class-validator'
+import { CreateUserProfileDto } from './create-user-profile.dto'
+import { UpdateUserProfileDto } from './update-user-profile.dto'
+
+export class UpdateUserFirstTimeDto {
+  @IsString()
+  @Length(5, 20)
+  @IsOptional()
+  username: string
+
+  @IsPhoneNumber('VI')
+  phoneNumber: string
+
+  @ValidateNested()
+  @Type(() => CreateUserProfileDto)
+  userProfile: CreateUserProfileDto
+}
+
+export class UpdateUserDto {
+  @IsString()
+  @Length(5, 20)
+  @IsOptional()
+  username: string
+
+  @IsPhoneNumber('VI')
+  @IsOptional()
+  phoneNumber: string
+
+  @ValidateNested()
+  @Type(() => UpdateUserProfileDto)
+  @IsOptional()
+  userProfile: UpdateUserProfileDto
+}
 
 export class UpdateUserPasswordDto {
   @IsString()

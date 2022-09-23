@@ -16,6 +16,15 @@ export class CompletedProfileGuard implements CanActivate {
       return true
     }
 
+    const requireCompletedProfile = this.reflector.get<boolean>(
+      'requireCompletedProfile',
+      context.getHandler(),
+    )
+
+    if (!requireCompletedProfile) {
+      return true
+    }
+
     const { user } =
       (context.switchToHttp().getRequest() as { user: UserEntity }) || {}
 

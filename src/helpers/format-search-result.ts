@@ -5,7 +5,7 @@ export const formatSearchResult = (
   page: number,
   limit: number,
   search: string,
-  filters: Array<Record<string, any>>,
+  filters: Record<string, any>,
   sort: string,
   order: string,
   total: number,

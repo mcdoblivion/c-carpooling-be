@@ -1,4 +1,5 @@
 import { SearchDto } from 'src/helpers/search.dto'
+import { UserEntity } from 'src/typeorm/entities'
 import { SearchResult } from 'src/types'
 
 export interface BaseController<T> {
@@ -10,7 +11,11 @@ export interface BaseController<T> {
 
   create(createDto: Record<string, any>): Promise<T>
 
-  updateOneById(id: number, updateDto: Record<string, any>): Promise<T>
+  updateOneById(
+    id: number,
+    updateDto: Record<string, any>,
+    updateBy?: UserEntity,
+  ): Promise<T>
 
   deleteOneById(id: number): Promise<any>
 

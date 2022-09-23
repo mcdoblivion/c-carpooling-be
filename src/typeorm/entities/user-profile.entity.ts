@@ -1,8 +1,9 @@
-import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
+import { Column, Entity, Index, JoinColumn, OneToOne } from 'typeorm'
 import { BaseEntity } from './base.entity'
 import { UserEntity } from './user.entity'
 
 @Entity({ name: 'user_profiles' })
+@Index(['firstName', 'lastName'])
 export class UserProfileEntity extends BaseEntity {
   @OneToOne(() => UserEntity, (user: UserEntity) => user.userProfile, {
     cascade: true,
@@ -24,7 +25,7 @@ export class UserProfileEntity extends BaseEntity {
   ICNumber: string
 
   @Column({ type: 'date' })
-  dateOfBirth: Date
+  dateOfBirth: string
 
   @Column()
   gender: string

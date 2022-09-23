@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -10,6 +11,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
 import { UserFromRequest } from 'src/helpers/get-user-from-request.decorator'
@@ -17,10 +19,18 @@ import { SearchDto } from 'src/helpers/search.dto'
 import { UserEntity } from 'src/typeorm/entities'
 import { Role } from 'src/typeorm/enums'
 import { SearchResult } from 'src/types'
-import { Auth, Public } from '../auth/decorators/auth.decorator'
+import {
+  Auth,
+  AuthWithoutCompletedProfile,
+  Public,
+} from '../auth/decorators/auth.decorator'
 import { BaseController } from '../base/base.controller'
 import { CreateNewPasswordDto } from './dto/create-new-password.dto'
-import { UpdateUserPasswordDto } from './dto/update-user.dto'
+import {
+  UpdateUserDto,
+  UpdateUserFirstTimeDto,
+  UpdateUserPasswordDto,
+} from './dto/update-user.dto'
 import { UserService } from './user.service'
 
 @Auth()
@@ -34,8 +44,8 @@ export class UserController implements BaseController<UserEntity> {
 
   @Auth(Role.ADMIN)
   @Get()
-  search(searchDto: SearchDto): Promise<SearchResult<UserEntity>> {
-    throw new Error('Method not implemented.')
+  search(@Query() searchDto: SearchDto): Promise<SearchResult<UserEntity>> {
+    return this.usersService.searchUsers(searchDto)
   }
 
   @Auth(Role.ADMIN)
@@ -69,9 +79,27 @@ export class UserController implements BaseController<UserEntity> {
   @Put(':id')
   updateOneById(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateDto: Record<string, any>,
+    @Body() updateDto: UpdateUserDto,
+    @UserFromRequest() user: UserEntity,
   ): Promise<UserEntity> {
-    throw new Error('Method not implemented.')
+    const { id: vId, role } = user
+
+    if (vId !== id && role !== Role.ADMIN) {
+      throw new ForbiddenException(
+        `You don't have permission to update this user!`,
+      )
+    }
+
+    return this.usersService.updateUser(id, updateDto)
+  }
+
+  @AuthWithoutCompletedProfile()
+  @Post(':id/profile')
+  createProfile(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUserFirstTimeDto: UpdateUserFirstTimeDto,
+  ): Promise<UserEntity> {
+    return this.usersService.createProfile(id, updateUserFirstTimeDto)
   }
 
   @Put(':id/password')

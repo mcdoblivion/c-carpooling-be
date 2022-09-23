@@ -1,5 +1,5 @@
-import { Transform } from 'class-transformer'
-import { IsIn, IsInt, IsOptional, IsString } from 'class-validator'
+import { Transform, Type } from 'class-transformer'
+import { IsIn, IsInt, IsObject, IsOptional, IsString } from 'class-validator'
 
 export class SearchDto {
   @Transform((transformFunctionParams) =>
@@ -20,15 +20,11 @@ export class SearchDto {
   @IsOptional()
   search?: string
 
-  @Transform((transformFunctionParams) => {
-    const value = JSON.parse(transformFunctionParams.value)
-    if (Array.isArray(value) && value.length) {
-      return value
-    }
-    return {}
-  })
+  @Transform((transformFunctionParams) =>
+    JSON.parse(transformFunctionParams.value),
+  )
   @IsOptional()
-  filters?: Record<string, any>
+  filters?: Record<string, any> = {}
 
   @IsString()
   @IsOptional()
