@@ -105,6 +105,7 @@ export class AuthService {
       [{ email: usernameOrEmail }, { username: usernameOrEmail }],
       {
         select: {
+          id: true,
           email: true,
           username: true,
           password: true,
@@ -226,6 +227,7 @@ export class AuthService {
   ) {
     if (otp) {
       const userId = await this.verifyOtp(otp)
+
       if (userId !== user.id) {
         throw new BadRequestException(`OTP is invalid or expired!`)
       }
@@ -289,7 +291,7 @@ export class AuthService {
         throw new BadRequestException(`Invalid 2FA method: ${twoFAMethod}`)
     }
 
-    this.cacheManager.set(
+    await this.cacheManager.set(
       otp,
       { userId: existUser.id },
       { ttl: otpExpiresInSeconds },

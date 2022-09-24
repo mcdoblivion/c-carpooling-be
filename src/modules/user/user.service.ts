@@ -20,11 +20,13 @@ import { SmsService } from 'src/services/sms/sms.service'
 import { UserEntity, UserProfileEntity } from 'src/typeorm/entities'
 import { TwoFAMethod } from 'src/typeorm/enums'
 import { SearchResult } from 'src/types'
-import { Brackets, Not } from 'typeorm'
+import { Brackets, IsNull, Not } from 'typeorm'
 import { AuthService } from '../auth/auth.service'
 import { BaseService } from '../base/base.service'
 import { CreateNewPasswordDto } from './dto/create-new-password.dto'
 import {
+  UpdateUser2FAMethodDto,
+  UpdateUserActivationStatusDto,
   UpdateUserDto,
   UpdateUserFirstTimeDto,
   UpdateUserPasswordDto,
@@ -47,6 +49,17 @@ export class UserService extends BaseService<UserEntity> {
     private readonly smsService: SmsService,
   ) {
     super(userRepository)
+  }
+
+  findById(id: number): Promise<UserEntity> {
+    if (!id) {
+      throw new BadRequestException('User ID is required!')
+    }
+
+    return this.userRepository.findOneBy({
+      id,
+      deletedAt: IsNull(),
+    })
   }
 
   async searchUsers({
@@ -348,6 +361,60 @@ export class UserService extends BaseService<UserEntity> {
     return this.update(id, { password: newHashPassword })
   }
 
+  async updateUser2FAMethod(
+    id: number,
+    { twoFAMethod, otp }: UpdateUser2FAMethodDto,
+  ) {
+    if (otp) {
+      const userId = await this.authService.verifyOtp(otp)
+
+      if (userId !== id) {
+        throw new BadRequestException(`OTP is invalid or expired!`)
+      }
+
+      const existingUser = await this.findById(userId)
+      if (!existingUser) {
+        throw new BadRequestException(`OTP is invalid or expired!`)
+      }
+
+      existingUser['2FAMethod'] = twoFAMethod
+      await this.userRepository.save(existingUser)
+
+      return '2FA method has been changed successfully!'
+    }
+
+    const existingUser = await this.findById(id)
+    if (!existingUser) {
+      throw new NotFoundException(`User with ID ${id} does not exist!`)
+    }
+
+    const vTwoFAMethod =
+      existingUser['2FAMethod'] !== TwoFAMethod.OFF
+        ? existingUser['2FAMethod']
+        : TwoFAMethod.EMAIL
+
+    return this.authService.sendOtp({
+      twoFAMethod: vTwoFAMethod,
+      usernameOrEmail: existingUser.email,
+    })
+  }
+
+  async updateUserActivationStatus(
+    id: number,
+    { isActive }: UpdateUserActivationStatusDto,
+  ) {
+    const existingUser = await this.findById(id)
+    if (!existingUser) {
+      throw new NotFoundException(`User with ID ${id} does not exist!`)
+    }
+
+    existingUser.isActive = isActive
+
+    await this.userRepository.save(existingUser)
+
+    return existingUser
+  }
+
   async createNewPassword({
     otp,
     usernameOrEmail,
@@ -390,5 +457,15 @@ export class UserService extends BaseService<UserEntity> {
         : TwoFAMethod.EMAIL
 
     return this.authService.sendOtp({ twoFAMethod, usernameOrEmail })
+  }
+
+  async deleteUser(id: number) {
+    const existingUser = await this.findById(id)
+
+    if (!existingUser) {
+      throw new NotFoundException(`User with ID ${id} does not exist!`)
+    }
+
+    return this.update(id, { deletedAt: new Date() })
   }
 }

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   HttpCode,
@@ -27,6 +28,8 @@ import {
 import { BaseController } from '../base/base.controller'
 import { CreateNewPasswordDto } from './dto/create-new-password.dto'
 import {
+  UpdateUser2FAMethodDto,
+  UpdateUserActivationStatusDto,
   UpdateUserDto,
   UpdateUserFirstTimeDto,
   UpdateUserPasswordDto,
@@ -110,8 +113,30 @@ export class UserController implements BaseController<UserEntity> {
     return this.usersService.updateUserPassword(id, updateUserPasswordDto)
   }
 
-  deleteOneById(id: number): Promise<any> {
-    throw new Error('Method not implemented.')
+  @Put(':id/2FA')
+  updateUser2FAMethod(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUser2FAMethodDto: UpdateUser2FAMethodDto,
+  ) {
+    return this.usersService.updateUser2FAMethod(id, updateUser2FAMethodDto)
+  }
+
+  @Auth(Role.ADMIN)
+  @Put(':id/activation')
+  updateUserActivationStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUserActivationStatusDto: UpdateUserActivationStatusDto,
+  ) {
+    return this.usersService.updateUserActivationStatus(
+      id,
+      updateUserActivationStatusDto,
+    )
+  }
+
+  @Auth(Role.ADMIN)
+  @Delete(':id')
+  deleteOneById(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.deleteUser(id)
   }
 
   deleteMany({ IDs }: { IDs: number[] }): Promise<any> {

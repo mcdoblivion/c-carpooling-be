@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common'
 import { FindManyOptions, FindOptionsWhere, In, Repository } from 'typeorm'
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity'
 
@@ -47,12 +48,20 @@ export abstract class BaseService<T> {
   }
 
   findById(id: number) {
+    if (!id) {
+      throw new BadRequestException('ID is required!')
+    }
+
     return this.baseRepository.findOneBy({
       id,
     } as unknown as FindOptionsWhere<T>)
   }
 
   async update(id: number, updateBaseDto: QueryDeepPartialEntity<T>) {
+    if (!id) {
+      throw new BadRequestException('ID is required!')
+    }
+
     await this.baseRepository.update(
       { id } as unknown as FindOptionsWhere<T>,
       updateBaseDto,
