@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { DataSource } from 'typeorm'
+import { DataSource, EntityTarget, Repository } from 'typeorm'
 import * as entities from './entities'
 // import * as subscribers from './subscribers'
 

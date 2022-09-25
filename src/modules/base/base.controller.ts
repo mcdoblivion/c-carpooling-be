@@ -9,7 +9,7 @@ export interface BaseController<T> {
 
   getOneById(id: number): Promise<T>
 
-  create(createDto: Record<string, any>): Promise<T>
+  create(createDto: Record<string, any>, createBy?: UserEntity): Promise<T>
 
   updateOneById(
     id: number,

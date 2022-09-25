@@ -16,6 +16,15 @@ export class VehicleEntity extends BaseEntity {
   driverId: number
 
   @Column()
+  registrationCertificateNumber: string
+
+  @Column()
+  registrationCertificateFrontPhotoURL: string
+
+  @Column()
+  registrationCertificateBackPhotoURL: string
+
+  @Column()
   licensePlate: string
 
   @Column()

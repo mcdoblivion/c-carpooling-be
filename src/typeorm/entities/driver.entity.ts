@@ -17,16 +17,7 @@ export class DriverEntity extends BaseEntity {
   userId: number
 
   @Column()
-  registrationCertificateNumber: string
-
-  @Column()
   driverLicenseNumber: string
-
-  @Column()
-  registrationCertificateFrontPhotoURL: string
-
-  @Column()
-  registrationCertificateBackPhotoURL: string
 
   @Column()
   driverLicenseFrontPhotoURL: string
@@ -36,6 +27,13 @@ export class DriverEntity extends BaseEntity {
 
   @Column({ type: 'enum', enum: RequestStatus, default: RequestStatus.PENDING })
   status: RequestStatus
+
+  @OneToOne(() => VehicleEntity)
+  @JoinColumn({ name: 'vehicleIdForCarpooling' })
+  vehicleForCarpooling: VehicleEntity
+
+  @Column({ nullable: true })
+  vehicleIdForCarpooling: number
 
   @OneToMany(() => VehicleEntity, (vehicle: VehicleEntity) => vehicle.driver)
   vehicles: VehicleEntity[]
