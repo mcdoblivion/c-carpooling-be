@@ -2,7 +2,9 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
+  NotFoundException,
   Param,
   ParseIntPipe,
   Post,
@@ -11,11 +13,12 @@ import {
 } from '@nestjs/common'
 import { UserFromRequest } from 'src/helpers/get-user-from-request.decorator'
 import { SearchDto } from 'src/helpers/search.dto'
-import { DriverEntity, UserEntity } from 'src/typeorm/entities'
+import { DriverEntity, UserEntity, VehicleEntity } from 'src/typeorm/entities'
 import { Role } from 'src/typeorm/enums'
 import { SearchResult } from 'src/types'
 import { Auth } from '../auth/decorators/auth.decorator'
 import { BaseController } from '../base/base.controller'
+import { CreateVehicleDto } from '../vehicle/dto/create-vehicle.dto'
 import { DriverService } from './driver.service'
 import { CreateDriverDto } from './dto/create-driver.dto'
 import { UpdateDriverDto } from './dto/update-driver.dto'
@@ -54,12 +57,34 @@ export class DriverController implements BaseController<DriverEntity> {
     })
   }
 
+  @Auth(Role.ADMIN)
   @Put(':id')
   updateOneById(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateDriverDto,
   ): Promise<DriverEntity> {
-    throw new Error('Method not implemented.')
+    return this.driverService.updateDriver(id, updateDto)
+  }
+
+  @Auth(Role.NORMAL_USER)
+  @Post(':id/vehicles')
+  async addVehicle(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() createVehicleDto: CreateVehicleDto,
+    @UserFromRequest() user: UserEntity,
+  ): Promise<VehicleEntity> {
+    const existingDriver = await this.driverService.findById(id)
+    if (!existingDriver) {
+      throw new NotFoundException(`Driver with ID ${id} does not exist!`)
+    }
+
+    if (existingDriver.userId !== user.id) {
+      throw new ForbiddenException(
+        'You are only allowed to add your own vehicle!',
+      )
+    }
+
+    return this.driverService.addVehicle(id, createVehicleDto)
   }
 
   @Auth(Role.ADMIN)

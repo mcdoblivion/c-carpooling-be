@@ -23,6 +23,7 @@ import { SmsModule } from './services/sms/sms.module'
 import { TypeOrmModule } from './typeorm/typeorm.module'
 import { TypeOrmService } from './typeorm/typeorm.service'
 import { DriverModule } from './modules/driver/driver.module'
+import { VehicleModule } from './modules/vehicle/vehicle.module'
 
 const config = new ConfigService()
 
@@ -62,6 +63,7 @@ const config = new ConfigService()
     AuthModule,
     UserModule,
     DriverModule,
+    VehicleModule,
   ],
   controllers: [AppController],
   providers: [],

@@ -41,4 +41,10 @@ export class VehicleEntity extends BaseEntity {
 
   @Column({ type: 'enum', enum: FuelType })
   fuelType: FuelType
+
+  @Column()
+  photoURL: string
+
+  @Column({ type: 'boolean', default: false })
+  isVerified: boolean
 }

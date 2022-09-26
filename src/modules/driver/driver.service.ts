@@ -1,17 +1,28 @@
-import { Injectable } from '@nestjs/common'
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import { formatSearchResult } from 'src/helpers/format-search-result'
 import { SearchDto } from 'src/helpers/search.dto'
-import { DriverEntity } from 'src/typeorm/entities'
+import { DriverEntity, VehicleEntity } from 'src/typeorm/entities'
 import { RequestStatus } from 'src/typeorm/enums'
 import { TypeOrmService } from 'src/typeorm/typeorm.service'
 import { SearchResult } from 'src/types'
 import { Brackets } from 'typeorm'
 import { BaseService } from '../base/base.service'
+import { CreateVehicleDto } from '../vehicle/dto/create-vehicle.dto'
+import { VehicleService } from '../vehicle/vehicle.service'
 import { CreateDriverDto } from './dto/create-driver.dto'
+import { UpdateDriverDto } from './dto/update-driver.dto'
 
 @Injectable()
 export class DriverService extends BaseService<DriverEntity> {
-  constructor(private readonly typeOrmService: TypeOrmService) {
+  constructor(
+    private readonly typeOrmService: TypeOrmService,
+    private readonly vehicleService: VehicleService,
+  ) {
     super(typeOrmService.getRepository(DriverEntity))
   }
 
@@ -73,5 +84,36 @@ export class DriverService extends BaseService<DriverEntity> {
     createDriverDto: CreateDriverDto & { userId: number },
   ): Promise<DriverEntity> {
     return this.create(createDriverDto)
+  }
+
+  async updateDriver(
+    id: number,
+    { status }: UpdateDriverDto,
+  ): Promise<DriverEntity> {
+    const existingDriver = await this.findById(id)
+    if (!existingDriver) {
+      throw new NotFoundException(`Driver with ID ${id} does not exist!`)
+    }
+
+    if (existingDriver.status !== RequestStatus.PENDING) {
+      throw new ForbiddenException('You have already processed this request!')
+    }
+
+    if (status === RequestStatus.PENDING) {
+      throw new BadRequestException(
+        'You are only able to accept or reject this request!',
+      )
+    }
+
+    existingDriver.status = status
+
+    return this.getRepository().save(existingDriver)
+  }
+
+  async addVehicle(
+    id: number,
+    createVehicleDto: CreateVehicleDto,
+  ): Promise<VehicleEntity> {
+    return this.vehicleService.create({ ...createVehicleDto, driverId: id })
   }
 }

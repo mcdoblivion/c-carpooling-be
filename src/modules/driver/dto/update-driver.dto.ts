@@ -1,4 +1,7 @@
-import { PartialType } from '@nestjs/mapped-types'
-import { CreateDriverDto } from './create-driver.dto'
+import { IsEnum } from 'class-validator'
+import { RequestStatus } from 'src/typeorm/enums'
 
-export class UpdateDriverDto extends PartialType(CreateDriverDto) {}
+export class UpdateDriverDto {
+  @IsEnum(RequestStatus)
+  status: RequestStatus
+}

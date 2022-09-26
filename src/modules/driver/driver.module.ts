@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common'
-import { DriverService } from './driver.service'
+import { VehicleModule } from '../vehicle/vehicle.module'
 import { DriverController } from './driver.controller'
+import { DriverService } from './driver.service'
 
 @Module({
+  imports: [VehicleModule],
   controllers: [DriverController],
   providers: [DriverService],
 })
