@@ -67,18 +67,28 @@ export class DriverController implements BaseController<DriverEntity> {
   }
 
   @Auth(Role.NORMAL_USER)
+  @Get(':id/vehicles')
+  async getAllVehicles(
+    @Param('id', ParseIntPipe) id: number,
+    @UserFromRequest() user: UserEntity,
+  ): Promise<VehicleEntity[]> {
+    if (!(await this.driverService.isValidDriver(id, user.id))) {
+      throw new ForbiddenException(
+        'You are only allowed to get your own vehicles!',
+      )
+    }
+
+    return this.driverService.getAllVehicles(id)
+  }
+
+  @Auth(Role.NORMAL_USER)
   @Post(':id/vehicles')
   async addVehicle(
     @Param('id', ParseIntPipe) id: number,
     @Body() createVehicleDto: CreateVehicleDto,
     @UserFromRequest() user: UserEntity,
   ): Promise<VehicleEntity> {
-    const existingDriver = await this.driverService.findById(id)
-    if (!existingDriver) {
-      throw new NotFoundException(`Driver with ID ${id} does not exist!`)
-    }
-
-    if (existingDriver.userId !== user.id) {
+    if (!(await this.driverService.isValidDriver(id, user.id))) {
       throw new ForbiddenException(
         'You are only allowed to add your own vehicle!',
       )

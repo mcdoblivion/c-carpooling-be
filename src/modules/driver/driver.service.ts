@@ -110,10 +110,27 @@ export class DriverService extends BaseService<DriverEntity> {
     return this.getRepository().save(existingDriver)
   }
 
+  async getAllVehicles(id: number): Promise<VehicleEntity[]> {
+    return this.vehicleService.findAll({ driverId: id })
+  }
+
   async addVehicle(
     id: number,
     createVehicleDto: CreateVehicleDto,
   ): Promise<VehicleEntity> {
     return this.vehicleService.create({ ...createVehicleDto, driverId: id })
+  }
+
+  async isValidDriver(driverId: number, userId: number): Promise<boolean> {
+    const existingDriver = await this.findById(driverId)
+    if (!existingDriver) {
+      throw new NotFoundException(`Driver with ID ${driverId} does not exist!`)
+    }
+
+    if (existingDriver.userId !== userId) {
+      return false
+    }
+
+    return true
   }
 }
