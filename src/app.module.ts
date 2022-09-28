@@ -24,6 +24,7 @@ import { TypeOrmModule } from './typeorm/typeorm.module'
 import { TypeOrmService } from './typeorm/typeorm.service'
 import { DriverModule } from './modules/driver/driver.module'
 import { VehicleModule } from './modules/vehicle/vehicle.module'
+import { CarpoolingGroupModule } from './modules/carpooling-group/carpooling-group.module'
 
 const config = new ConfigService()
 
@@ -64,6 +65,7 @@ const config = new ConfigService()
     UserModule,
     DriverModule,
     VehicleModule,
+    CarpoolingGroupModule,
   ],
   controllers: [AppController],
   providers: [],

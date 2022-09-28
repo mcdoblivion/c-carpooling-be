@@ -4,7 +4,6 @@ import {
   Delete,
   ForbiddenException,
   Get,
-  NotFoundException,
   Param,
   ParseIntPipe,
   Post,
@@ -67,6 +66,22 @@ export class DriverController implements BaseController<DriverEntity> {
   }
 
   @Auth(Role.NORMAL_USER)
+  @Put(':id/main-vehicle')
+  async changeVehicleForCarpooling(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('vehicleId', ParseIntPipe) vehicleId: number,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    if (!(await this.driverService.isValidDriver(id, user.id))) {
+      throw new ForbiddenException(
+        'You are only allowed to change your own vehicle!',
+      )
+    }
+
+    return this.driverService.changeVehicleForCarpooling(id, user.id, vehicleId)
+  }
+
+  @Auth(Role.NORMAL_USER)
   @Get(':id/vehicles')
   async getAllVehicles(
     @Param('id', ParseIntPipe) id: number,
@@ -95,6 +110,21 @@ export class DriverController implements BaseController<DriverEntity> {
     }
 
     return this.driverService.addVehicle(id, createVehicleDto)
+  }
+
+  @Auth(Role.NORMAL_USER)
+  @Delete(':id/vehicles/:vehicleId')
+  async deleteVehicle(
+    @Param() { id, vehicleId }: { id: number; vehicleId: number },
+    @UserFromRequest() user: UserEntity,
+  ) {
+    if (!(await this.driverService.isValidDriver(id, user.id))) {
+      throw new ForbiddenException(
+        'You are only allowed to delete your own vehicle!',
+      )
+    }
+
+    return this.driverService.deleteVehicle(+id, +vehicleId)
   }
 
   @Auth(Role.ADMIN)

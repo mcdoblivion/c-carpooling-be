@@ -4,7 +4,10 @@ import { BaseEntity } from './base.entity'
 import { UserEntity } from './user.entity'
 
 @Entity({ name: 'carpooling_groups' })
-@Index(['groupName', 'driverUserId'], { unique: true })
+@Index(['groupName', 'driverUserId'], {
+  unique: true,
+  where: '"deletedAt" IS NULL',
+})
 export class CarpoolingGroupEntity extends BaseEntity {
   @OneToMany(() => UserEntity, (user: UserEntity) => user.carpoolingGroup)
   carpoolers: UserEntity
@@ -39,4 +42,10 @@ export class CarpoolingGroupEntity extends BaseEntity {
     (log: CarpoolingLogEntity) => log.carpoolingGroup,
   )
   carpoolingLogs: CarpoolingLogEntity
+
+  @Column({
+    type: 'timestamp with time zone',
+    nullable: true,
+  })
+  deletedAt: Date
 }

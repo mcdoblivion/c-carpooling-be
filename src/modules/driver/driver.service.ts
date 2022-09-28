@@ -10,8 +10,9 @@ import { DriverEntity, VehicleEntity } from 'src/typeorm/entities'
 import { RequestStatus } from 'src/typeorm/enums'
 import { TypeOrmService } from 'src/typeorm/typeorm.service'
 import { SearchResult } from 'src/types'
-import { Brackets } from 'typeorm'
+import { Brackets, IsNull } from 'typeorm'
 import { BaseService } from '../base/base.service'
+import { CarpoolingGroupService } from '../carpooling-group/carpooling-group.service'
 import { CreateVehicleDto } from '../vehicle/dto/create-vehicle.dto'
 import { VehicleService } from '../vehicle/vehicle.service'
 import { CreateDriverDto } from './dto/create-driver.dto'
@@ -22,6 +23,7 @@ export class DriverService extends BaseService<DriverEntity> {
   constructor(
     private readonly typeOrmService: TypeOrmService,
     private readonly vehicleService: VehicleService,
+    private readonly carpoolingGroupService: CarpoolingGroupService,
   ) {
     super(typeOrmService.getRepository(DriverEntity))
   }
@@ -119,6 +121,40 @@ export class DriverService extends BaseService<DriverEntity> {
     createVehicleDto: CreateVehicleDto,
   ): Promise<VehicleEntity> {
     return this.vehicleService.create({ ...createVehicleDto, driverId: id })
+  }
+
+  async changeVehicleForCarpooling(
+    driverId: number,
+    userId: number,
+    vehicleId: number,
+  ) {
+    const activeCarpoolingGroup = await this.carpoolingGroupService.findOne({
+      driverUserId: userId,
+      deletedAt: IsNull(),
+    })
+
+    if (activeCarpoolingGroup) {
+      throw new BadRequestException(
+        'You are only allowed to change the vehicle for carpooling if you are not in any active carpooling group!',
+      )
+    }
+
+    return this.update(driverId, { vehicleIdForCarpooling: vehicleId })
+  }
+
+  async deleteVehicle(id: number, vehicleId: number) {
+    const existingDriver = await this.findById(id)
+    if (!existingDriver) {
+      throw new NotFoundException(`Driver with ID ${id} does not exist!`)
+    }
+
+    if (existingDriver.vehicleIdForCarpooling === vehicleId) {
+      throw new BadRequestException(
+        `You are not allow to delete the vehicle used for carpooling!\nPlease choose another vehicle for carpooling then try again!`,
+      )
+    }
+
+    return this.vehicleService.delete(vehicleId)
   }
 
   async isValidDriver(driverId: number, userId: number): Promise<boolean> {
