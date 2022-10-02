@@ -3,11 +3,11 @@ import { UserEntity } from 'src/typeorm/entities'
 import { SearchResult } from 'src/types'
 
 export interface BaseController<T> {
-  search(searchDto: SearchDto): Promise<SearchResult<T>>
+  search(searchDto: SearchDto, searchBy?: UserEntity): Promise<SearchResult<T>>
 
-  getAll(): Promise<T[]>
+  getAll(getBy?: UserEntity): Promise<T[]>
 
-  getOneById(id: number): Promise<T>
+  getOneById(id: number, getBy?: UserEntity): Promise<T>
 
   create(createDto: Record<string, any>, createBy?: UserEntity): Promise<T>
 
@@ -17,7 +17,7 @@ export interface BaseController<T> {
     updateBy?: UserEntity,
   ): Promise<T>
 
-  deleteOneById(id: number): Promise<any>
+  deleteOneById(id: number, deletedBy?: UserEntity): Promise<any>
 
-  deleteMany({ IDs }: { IDs: number[] }): Promise<any>
+  deleteMany({ IDs }: { IDs: number[] }, deletedBy?: UserEntity): Promise<any>
 }

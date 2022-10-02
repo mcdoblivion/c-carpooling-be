@@ -20,6 +20,9 @@ export class PaymentMethodEntity extends BaseEntity {
   @Column()
   cardType: string
 
+  @Column({ unique: true })
+  stripePaymentMethodId: string
+
   @Column()
-  stripePaymentMethodID: string
+  stripeCustomerId: string
 }

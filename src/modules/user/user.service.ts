@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   CACHE_MANAGER,
+  ForbiddenException,
   forwardRef,
   Inject,
   Injectable,
@@ -17,12 +18,15 @@ import { SearchDto } from 'src/helpers/search.dto'
 import { S3Service } from 'src/services/aws/s3.service'
 import { MailService } from 'src/services/mail/mail.service'
 import { SmsService } from 'src/services/sms/sms.service'
+import { StripeService } from 'src/services/stripe/stripe.service'
 import { UserEntity, UserProfileEntity } from 'src/typeorm/entities'
 import { TwoFAMethod } from 'src/typeorm/enums'
 import { SearchResult } from 'src/types'
-import { Brackets, IsNull, Not } from 'typeorm'
+import { Brackets, In, IsNull, Not } from 'typeorm'
 import { AuthService } from '../auth/auth.service'
 import { BaseService } from '../base/base.service'
+import { PaymentMethodService } from '../payment-method/payment-method.service'
+import { CreateNewCardDto } from './dto/create-new-card.dto'
 import { CreateNewPasswordDto } from './dto/create-new-password.dto'
 import {
   UpdateUser2FAMethodDto,
@@ -47,6 +51,8 @@ export class UserService extends BaseService<UserEntity> {
     private readonly cacheManager: Cache,
     private readonly mailsService: MailService,
     private readonly smsService: SmsService,
+    private readonly stripeService: StripeService,
+    private readonly paymentMethodService: PaymentMethodService,
   ) {
     super(userRepository)
   }
@@ -467,5 +473,101 @@ export class UserService extends BaseService<UserEntity> {
     }
 
     return this.update(id, { deletedAt: new Date() })
+  }
+
+  // Payment
+
+  async addNewCard(
+    userId: number,
+    { cardNumber, expiredMonth, expiredYear, cvc }: CreateNewCardDto,
+  ) {
+    const existingPaymentMethod = await this.paymentMethodService.findOne({
+      userId,
+    })
+
+    let stripeCustomerId = ''
+    if (existingPaymentMethod) {
+      stripeCustomerId = existingPaymentMethod.stripeCustomerId
+    } else {
+      const stripeCustomer = await this.stripeService.customers.create()
+      stripeCustomerId = stripeCustomer.id
+    }
+
+    const stripePaymentMethod = await this.stripeService.paymentMethods.create({
+      type: 'card',
+      card: {
+        number: cardNumber,
+        exp_month: expiredMonth,
+        exp_year: expiredYear,
+        cvc: cvc.toString(),
+      },
+    })
+
+    const {
+      id: stripePaymentMethodId,
+      card: { brand, last4 },
+    } = stripePaymentMethod
+
+    const [paymentMethod, stripeSetupIntent] = await Promise.all([
+      this.paymentMethodService.create({
+        userId,
+        lastFourDigits: last4,
+        cardType: brand,
+        stripePaymentMethodId,
+        stripeCustomerId,
+      }),
+
+      this.stripeService.setupIntents.create({
+        customer: stripeCustomerId,
+        payment_method: stripePaymentMethodId,
+      }),
+    ])
+
+    return { paymentMethod, stripeSetupIntent }
+  }
+
+  getCardList(userId: number) {
+    return this.paymentMethodService.findAll({ userId })
+  }
+
+  async deleteCard(userId: number, cardId: number) {
+    const existingCard = await this.paymentMethodService.findById(cardId)
+
+    if (!existingCard) {
+      throw new NotFoundException(`Card with ID ${cardId} does not exist!`)
+    }
+
+    if (existingCard.userId !== userId) {
+      throw new ForbiddenException(
+        'You are only allowed to delete your own card!',
+      )
+    }
+
+    const allUserCards = await this.paymentMethodService.findAll({ userId })
+    if (allUserCards.length === 1) {
+      throw new ForbiddenException(
+        'Please add another card before deleting your only card!',
+      )
+    }
+
+    return this.paymentMethodService.delete(cardId)
+  }
+
+  async isOwnCards(userId: number, ...cardIds: number[]): Promise<boolean> {
+    const existingCards = await this.paymentMethodService.findAll({
+      id: In(cardIds),
+    })
+
+    if (!existingCards.length) {
+      return false
+    }
+
+    for (const { userId: vUserId } of existingCards) {
+      if (userId !== vUserId) {
+        return false
+      }
+    }
+
+    return true
   }
 }

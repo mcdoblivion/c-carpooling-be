@@ -26,6 +26,7 @@ import {
   Public,
 } from '../auth/decorators/auth.decorator'
 import { BaseController } from '../base/base.controller'
+import { CreateNewCardDto } from './dto/create-new-card.dto'
 import { CreateNewPasswordDto } from './dto/create-new-password.dto'
 import {
   UpdateUser2FAMethodDto,
@@ -141,5 +142,51 @@ export class UserController implements BaseController<UserEntity> {
 
   deleteMany({ IDs }: { IDs: number[] }): Promise<any> {
     throw new Error('Method not implemented.')
+  }
+
+  // Payment
+  @Auth(Role.NORMAL_USER)
+  @Post(':id/cards')
+  addNewCard(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() createNewCardDto: CreateNewCardDto,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    if (id !== user.id) {
+      throw new ForbiddenException('You are only allowed to add your own card!')
+    }
+
+    return this.usersService.addNewCard(id, createNewCardDto)
+  }
+
+  @Auth(Role.NORMAL_USER)
+  @Get(':id/cards')
+  getCardList(
+    @Param('id', ParseIntPipe) id: number,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    if (id !== user.id) {
+      throw new ForbiddenException(
+        'You are only allowed to get your own cards!',
+      )
+    }
+
+    return this.usersService.getCardList(id)
+  }
+
+  @Auth(Role.NORMAL_USER)
+  @Delete(':id/cards/:cardId')
+  async deleteCard(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('cardId', ParseIntPipe) cardId: number,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    if (id !== user.id) {
+      throw new ForbiddenException(
+        'You are only allowed to delete your own card!',
+      )
+    }
+
+    return this.usersService.deleteCard(id, cardId)
   }
 }

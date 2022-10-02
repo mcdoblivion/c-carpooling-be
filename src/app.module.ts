@@ -16,15 +16,19 @@ import * as winston from 'winston'
 import { AppController } from './app.controller'
 import { HttpLoggerMiddleware } from './helpers/http-logger.middleware'
 import { AuthModule } from './modules/auth/auth.module'
+import { CarpoolingGroupModule } from './modules/carpooling-group/carpooling-group.module'
+import { DriverModule } from './modules/driver/driver.module'
+import { PaymentMethodModule } from './modules/payment-method/payment-method.module'
 import { UserModule } from './modules/user/user.module'
+import { VehicleModule } from './modules/vehicle/vehicle.module'
+import { WalletTransactionModule } from './modules/wallet-transaction/wallet-transaction.module'
+import { WalletModule } from './modules/wallet/wallet.module'
 import { S3Module } from './services/aws/s3.module'
 import { MailModule } from './services/mail/mail.module'
 import { SmsModule } from './services/sms/sms.module'
+import { StripeModule } from './services/stripe/stripe.module'
 import { TypeOrmModule } from './typeorm/typeorm.module'
 import { TypeOrmService } from './typeorm/typeorm.service'
-import { DriverModule } from './modules/driver/driver.module'
-import { VehicleModule } from './modules/vehicle/vehicle.module'
-import { CarpoolingGroupModule } from './modules/carpooling-group/carpooling-group.module'
 
 const config = new ConfigService()
 
@@ -61,11 +65,15 @@ const config = new ConfigService()
     S3Module,
     MailModule,
     SmsModule,
+    StripeModule,
     AuthModule,
     UserModule,
     DriverModule,
     VehicleModule,
     CarpoolingGroupModule,
+    PaymentMethodModule,
+    WalletModule,
+    WalletTransactionModule,
   ],
   controllers: [AppController],
   providers: [],

@@ -1,6 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm'
 import { WalletEntity } from '.'
 import { WalletActionType } from '../enums'
+import { WalletTransactionStatus } from '../enums/wallet-transaction-status'
 import { BaseEntity } from './base.entity'
 
 @Entity({ name: 'wallet_transactions' })
@@ -24,4 +25,11 @@ export class WalletTransactionEntity extends BaseEntity {
 
   @Column({ nullable: true })
   description: string
+
+  @Column({
+    type: 'enum',
+    enum: WalletTransactionStatus,
+    default: WalletTransactionStatus.PENDING,
+  })
+  status: WalletTransactionStatus
 }
