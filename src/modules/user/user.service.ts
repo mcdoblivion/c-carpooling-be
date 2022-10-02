@@ -20,14 +20,17 @@ import { MailService } from 'src/services/mail/mail.service'
 import { SmsService } from 'src/services/sms/sms.service'
 import { StripeService } from 'src/services/stripe/stripe.service'
 import { UserEntity, UserProfileEntity } from 'src/typeorm/entities'
-import { TwoFAMethod } from 'src/typeorm/enums'
+import { TwoFAMethod, WalletActionType } from 'src/typeorm/enums'
 import { SearchResult } from 'src/types'
 import { Brackets, In, IsNull, Not } from 'typeorm'
 import { AuthService } from '../auth/auth.service'
 import { BaseService } from '../base/base.service'
 import { PaymentMethodService } from '../payment-method/payment-method.service'
+import { WalletTransactionService } from '../wallet-transaction/wallet-transaction.service'
+import { WalletService } from '../wallet/wallet.service'
 import { CreateNewCardDto } from './dto/create-new-card.dto'
 import { CreateNewPasswordDto } from './dto/create-new-password.dto'
+import { TopUpToWalletDto } from './dto/top-up-to-wallet.dto'
 import {
   UpdateUser2FAMethodDto,
   UpdateUserActivationStatusDto,
@@ -53,6 +56,8 @@ export class UserService extends BaseService<UserEntity> {
     private readonly smsService: SmsService,
     private readonly stripeService: StripeService,
     private readonly paymentMethodService: PaymentMethodService,
+    private readonly walletService: WalletService,
+    private readonly walletTransactionService: WalletTransactionService,
   ) {
     super(userRepository)
   }
@@ -508,22 +513,40 @@ export class UserService extends BaseService<UserEntity> {
       card: { brand, last4 },
     } = stripePaymentMethod
 
-    const [paymentMethod, stripeSetupIntent] = await Promise.all([
-      this.paymentMethodService.create({
+    let stripeSetupIntent = await this.stripeService.setupIntents.create({
+      customer: stripeCustomerId,
+      payment_method: stripePaymentMethodId,
+      metadata: {
         userId,
         lastFourDigits: last4,
         cardType: brand,
         stripePaymentMethodId,
         stripeCustomerId,
-      }),
+      },
+    })
 
-      this.stripeService.setupIntents.create({
-        customer: stripeCustomerId,
-        payment_method: stripePaymentMethodId,
-      }),
-    ])
+    try {
+      stripeSetupIntent = await this.stripeService.setupIntents.confirm(
+        stripeSetupIntent.id,
+      )
 
-    return { paymentMethod, stripeSetupIntent }
+      const { status } = stripeSetupIntent
+
+      // TODO: handle setup intent for card that requires 3D secure authentication
+      if (status !== 'succeeded') {
+        throw new Error()
+      }
+
+      return this.paymentMethodService.create({
+        userId,
+        lastFourDigits: last4,
+        cardType: brand,
+        stripePaymentMethodId,
+        stripeCustomerId,
+      })
+    } catch (error) {
+      throw new BadRequestException(`This card is temporarily unsupported!`)
+    }
   }
 
   getCardList(userId: number) {
@@ -551,6 +574,63 @@ export class UserService extends BaseService<UserEntity> {
     }
 
     return this.paymentMethodService.delete(cardId)
+  }
+
+  async topUpToWallet(
+    userId: number,
+    { paymentMethodId, amount }: TopUpToWalletDto,
+  ) {
+    const paymentMethod = await this.paymentMethodService.findById(
+      paymentMethodId,
+    )
+
+    if (!paymentMethod) {
+      throw new BadRequestException(
+        `Payment method with ID ${paymentMethodId} does not exist!`,
+      )
+    }
+
+    const {
+      stripeCustomerId,
+      stripePaymentMethodId,
+      userId: vUserId,
+    } = paymentMethod
+
+    if (userId !== vUserId) {
+      throw new ForbiddenException(`This payment method isn't your!`)
+    }
+
+    const wallet = await this.walletService.findOne({ userId })
+
+    const walletTransaction = await this.walletTransactionService.create({
+      walletId: wallet.id,
+      value: amount,
+      actionType: WalletActionType.TOP_UP,
+      description: 'Top up to wallet',
+    })
+
+    const stripePaymentIntent = await this.stripeService.paymentIntents.create({
+      amount,
+      currency: 'VND',
+      automatic_payment_methods: {
+        enabled: true,
+      },
+      payment_method: stripePaymentMethodId,
+      customer: stripeCustomerId,
+      metadata: {
+        walletTransactionId: walletTransaction.id,
+      },
+    })
+
+    try {
+      await this.stripeService.paymentIntents.confirm(stripePaymentIntent.id, {
+        return_url: 'https://example.com',
+      })
+    } catch (error) {
+      return { stripePaymentIntent }
+    }
+
+    return 'Top up to wallet successfully!'
   }
 
   async isOwnCards(userId: number, ...cardIds: number[]): Promise<boolean> {

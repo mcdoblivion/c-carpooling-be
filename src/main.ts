@@ -11,14 +11,12 @@ import { TransformResponseInterceptor } from './helpers/transform-response.inter
 import { TrimStringPipe } from './helpers/trim-string.pipe'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create(AppModule, { bodyParser: false })
 
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER))
 
   app.use(helmet())
   app.enableCors()
-  app.use(json({ limit: '50mb' }))
-  app.use(urlencoded({ extended: true, limit: '50mb' }))
 
   const httpAdapterHost = app.get(HttpAdapterHost)
   app.useGlobalFilters(
@@ -44,8 +42,24 @@ async function bootstrap() {
         path: '/',
         method: RequestMethod.ALL,
       },
+      {
+        path: '/webhooks/stripe',
+        method: RequestMethod.POST,
+      },
     ],
   })
+
+  const rawBodyBuffer = (req, res, buffer, encoding) => {
+    if (!req.headers['stripe-signature']) {
+      return
+    }
+
+    if (buffer && buffer.length) {
+      req.rawBody = buffer.toString(encoding || 'utf8')
+    }
+  }
+  app.use(json({ limit: '50mb', verify: rawBodyBuffer }))
+  app.use(urlencoded({ extended: true, limit: '50mb', verify: rawBodyBuffer }))
 
   const config = new ConfigService()
   const port = parseInt(config.get('PORT'))

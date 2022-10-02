@@ -29,6 +29,7 @@ import { SmsModule } from './services/sms/sms.module'
 import { StripeModule } from './services/stripe/stripe.module'
 import { TypeOrmModule } from './typeorm/typeorm.module'
 import { TypeOrmService } from './typeorm/typeorm.service'
+import { StripeController } from './webhooks/stripe.controller'
 
 const config = new ConfigService()
 
@@ -75,7 +76,7 @@ const config = new ConfigService()
     WalletModule,
     WalletTransactionModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, StripeController],
   providers: [],
 })
 export class AppModule implements NestModule {
