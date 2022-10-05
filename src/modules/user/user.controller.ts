@@ -14,6 +14,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common'
+import { ApiTags } from '@nestjs/swagger'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
 import { UserFromRequest } from 'src/helpers/get-user-from-request.decorator'
 import { SearchDto } from 'src/helpers/search.dto'
@@ -38,6 +39,7 @@ import {
 } from './dto/update-user.dto'
 import { UserService } from './user.service'
 
+@ApiTags('Users')
 @Auth()
 @Controller('users')
 export class UserController implements BaseController<UserEntity> {

@@ -1,6 +1,7 @@
 import { RequestMethod, ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { HttpAdapterHost, NestFactory } from '@nestjs/core'
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { json, urlencoded } from 'express'
 import helmet from 'helmet'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
@@ -60,6 +61,20 @@ async function bootstrap() {
   }
   app.use(json({ limit: '50mb', verify: rawBodyBuffer }))
   app.use(urlencoded({ extended: true, limit: '50mb', verify: rawBodyBuffer }))
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('C-Carpooling API Documentation')
+    .setDescription('C-Carpooling API Documentation')
+    .setVersion('1.0')
+    .addBearerAuth({
+      type: 'http',
+      in: 'header',
+      scheme: 'bearer',
+      bearerFormat: 'jwt',
+    })
+    .build()
+  const document = SwaggerModule.createDocument(app, swaggerConfig)
+  SwaggerModule.setup('documentation', app, document)
 
   const config = new ConfigService()
   const port = parseInt(config.get('PORT'))

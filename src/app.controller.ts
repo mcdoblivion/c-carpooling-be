@@ -11,6 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
+import { ApiTags } from '@nestjs/swagger'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
 import * as sharp from 'sharp'
 import { v4 as uuid } from 'uuid'
@@ -18,6 +19,7 @@ import { CropImageDto } from './helpers/crop-image.dto'
 import { Auth } from './modules/auth/decorators/auth.decorator'
 import { S3Service } from './services/aws/s3.service'
 
+@ApiTags('Utilities')
 @Controller()
 export class AppController {
   constructor(
