@@ -10,11 +10,13 @@ import {
   Req,
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { ApiTags } from '@nestjs/swagger'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
 import { WalletTransactionService } from 'src/modules/wallet-transaction/wallet-transaction.service'
 import { StripeService } from 'src/services/stripe/stripe.service'
 import Stripe from 'stripe'
 
+@ApiTags('Webhook')
 @Controller()
 export class StripeController {
   constructor(

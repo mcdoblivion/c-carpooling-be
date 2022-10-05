@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
 } from '@nestjs/common'
+import { ApiTags } from '@nestjs/swagger'
 import { SearchDto } from 'src/helpers/search.dto'
 import { CarpoolingGroupEntity, UserEntity } from 'src/typeorm/entities'
 import { SearchResult } from 'src/types'
@@ -15,6 +16,7 @@ import { CarpoolingGroupService } from './carpooling-group.service'
 import { CreateCarpoolingGroupDto } from './dto/create-carpooling-group.dto'
 import { UpdateCarpoolingGroupDto } from './dto/update-carpooling-group.dto'
 
+@ApiTags('Carpooling Group')
 @Controller('carpooling-groups')
 export class CarpoolingGroupController
   implements BaseController<CarpoolingGroupEntity>

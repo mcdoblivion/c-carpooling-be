@@ -10,6 +10,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common'
+import { ApiTags } from '@nestjs/swagger'
 import { UserFromRequest } from 'src/helpers/get-user-from-request.decorator'
 import { SearchDto } from 'src/helpers/search.dto'
 import { DriverEntity, UserEntity, VehicleEntity } from 'src/typeorm/entities'
@@ -22,6 +23,7 @@ import { DriverService } from './driver.service'
 import { CreateDriverDto } from './dto/create-driver.dto'
 import { UpdateDriverDto } from './dto/update-driver.dto'
 
+@ApiTags('Driver')
 @Auth()
 @Controller('drivers')
 export class DriverController implements BaseController<DriverEntity> {

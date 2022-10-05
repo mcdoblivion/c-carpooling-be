@@ -10,12 +10,14 @@ import {
   UseGuards,
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { ApiTags } from '@nestjs/swagger'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
 import { UserEntity } from 'src/typeorm/entities'
 import { AuthService } from './auth.service'
 import { SignupDto } from './dto/signup.dto'
 import { LocalAuthGuard } from './guards/local-auth.guard'
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
