@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { DataSource, EntityTarget, Repository } from 'typeorm'
+import { DataSource } from 'typeorm'
 import * as entities from './entities'
-// import * as subscribers from './subscribers'
+import * as subscribers from './subscribers'
 
 @Injectable()
 export class TypeOrmService extends DataSource {
@@ -16,7 +16,7 @@ export class TypeOrmService extends DataSource {
       database: config.get<string>('DB_DATABASE'),
       ssl: { rejectUnauthorized: false },
       // timezone: '+08:00', // default database timezone is SGT
-      // subscribers,
+      subscribers,
       entities,
       logging: config.get<string>('DB_LOGGING') === 'true',
     })

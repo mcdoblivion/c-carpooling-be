@@ -26,7 +26,9 @@ import {
   Public,
 } from '../auth/decorators/auth.decorator'
 import { BaseController } from '../base/base.controller'
+import { CreateNewCardDto } from './dto/create-new-card.dto'
 import { CreateNewPasswordDto } from './dto/create-new-password.dto'
+import { TopUpToWalletDto } from './dto/top-up-to-wallet.dto'
 import {
   UpdateUser2FAMethodDto,
   UpdateUserActivationStatusDto,
@@ -66,10 +68,6 @@ export class UserController implements BaseController<UserEntity> {
   @Get(':id')
   getOneById(@Param('id', ParseIntPipe) id: number): Promise<UserEntity> {
     return this.usersService.getUserDetails(id)
-  }
-
-  create(createDto: Record<string, any>): Promise<UserEntity> {
-    throw new Error('Method not implemented.')
   }
 
   @Public()
@@ -139,7 +137,66 @@ export class UserController implements BaseController<UserEntity> {
     return this.usersService.deleteUser(id)
   }
 
-  deleteMany({ IDs }: { IDs: number[] }): Promise<any> {
-    throw new Error('Method not implemented.')
+  // Payment
+  @Auth(Role.NORMAL_USER)
+  @Post(':id/cards')
+  addNewCard(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() createNewCardDto: CreateNewCardDto,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    if (id !== user.id) {
+      throw new ForbiddenException('You are only allowed to add your own card!')
+    }
+
+    return this.usersService.addNewCard(id, createNewCardDto)
+  }
+
+  @Auth(Role.NORMAL_USER)
+  @Get(':id/cards')
+  getCardList(
+    @Param('id', ParseIntPipe) id: number,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    if (id !== user.id) {
+      throw new ForbiddenException(
+        'You are only allowed to get your own cards!',
+      )
+    }
+
+    return this.usersService.getCardList(id)
+  }
+
+  @Auth(Role.NORMAL_USER)
+  @Delete(':id/cards/:cardId')
+  async deleteCard(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('cardId', ParseIntPipe) cardId: number,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    if (id !== user.id) {
+      throw new ForbiddenException(
+        'You are only allowed to delete your own card!',
+      )
+    }
+
+    return this.usersService.deleteCard(id, cardId)
+  }
+
+  @Auth(Role.NORMAL_USER)
+  @Post(':id/top-up')
+  @HttpCode(HttpStatus.OK)
+  topUpToWallet(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() topUpToWalletDto: TopUpToWalletDto,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    if (id !== user.id) {
+      throw new ForbiddenException(
+        'You are only allowed to top up to your own card!',
+      )
+    }
+
+    return this.usersService.topUpToWallet(id, topUpToWalletDto)
   }
 }

@@ -39,11 +39,6 @@ export class DriverController implements BaseController<DriverEntity> {
     return this.driverService.findAll({})
   }
 
-  @Get(':id')
-  getOneById(@Param('id', ParseIntPipe) id: number): Promise<DriverEntity> {
-    throw new Error('Method not implemented.')
-  }
-
   @Auth(Role.NORMAL_USER)
   @Post()
   create(
@@ -125,15 +120,5 @@ export class DriverController implements BaseController<DriverEntity> {
     }
 
     return this.driverService.deleteVehicle(+id, +vehicleId)
-  }
-
-  @Auth(Role.ADMIN)
-  @Delete(':id')
-  deleteOneById(@Param('id', ParseIntPipe) id: number): Promise<any> {
-    throw new Error('Method not implemented.')
-  }
-
-  deleteMany({ IDs }: { IDs: number[] }): Promise<any> {
-    throw new Error('Method not implemented.')
   }
 }

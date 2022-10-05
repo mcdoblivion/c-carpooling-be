@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   CACHE_MANAGER,
+  ForbiddenException,
   forwardRef,
   Inject,
   Injectable,
@@ -17,13 +18,19 @@ import { SearchDto } from 'src/helpers/search.dto'
 import { S3Service } from 'src/services/aws/s3.service'
 import { MailService } from 'src/services/mail/mail.service'
 import { SmsService } from 'src/services/sms/sms.service'
+import { StripeService } from 'src/services/stripe/stripe.service'
 import { UserEntity, UserProfileEntity } from 'src/typeorm/entities'
-import { TwoFAMethod } from 'src/typeorm/enums'
+import { TwoFAMethod, WalletActionType } from 'src/typeorm/enums'
 import { SearchResult } from 'src/types'
-import { Brackets, IsNull, Not } from 'typeorm'
+import { Brackets, In, IsNull, Not } from 'typeorm'
 import { AuthService } from '../auth/auth.service'
 import { BaseService } from '../base/base.service'
+import { PaymentMethodService } from '../payment-method/payment-method.service'
+import { WalletTransactionService } from '../wallet-transaction/wallet-transaction.service'
+import { WalletService } from '../wallet/wallet.service'
+import { CreateNewCardDto } from './dto/create-new-card.dto'
 import { CreateNewPasswordDto } from './dto/create-new-password.dto'
+import { TopUpToWalletDto } from './dto/top-up-to-wallet.dto'
 import {
   UpdateUser2FAMethodDto,
   UpdateUserActivationStatusDto,
@@ -47,6 +54,10 @@ export class UserService extends BaseService<UserEntity> {
     private readonly cacheManager: Cache,
     private readonly mailsService: MailService,
     private readonly smsService: SmsService,
+    private readonly stripeService: StripeService,
+    private readonly paymentMethodService: PaymentMethodService,
+    private readonly walletService: WalletService,
+    private readonly walletTransactionService: WalletTransactionService,
   ) {
     super(userRepository)
   }
@@ -467,5 +478,176 @@ export class UserService extends BaseService<UserEntity> {
     }
 
     return this.update(id, { deletedAt: new Date() })
+  }
+
+  // Payment
+
+  async addNewCard(
+    userId: number,
+    { cardNumber, expiredMonth, expiredYear, cvc }: CreateNewCardDto,
+  ) {
+    const existingPaymentMethod = await this.paymentMethodService.findOne({
+      userId,
+    })
+
+    let stripeCustomerId = ''
+    if (existingPaymentMethod) {
+      stripeCustomerId = existingPaymentMethod.stripeCustomerId
+    } else {
+      const stripeCustomer = await this.stripeService.customers.create()
+      stripeCustomerId = stripeCustomer.id
+    }
+
+    const stripePaymentMethod = await this.stripeService.paymentMethods.create({
+      type: 'card',
+      card: {
+        number: cardNumber,
+        exp_month: expiredMonth,
+        exp_year: expiredYear,
+        cvc: cvc.toString(),
+      },
+    })
+
+    const {
+      id: stripePaymentMethodId,
+      card: { brand, last4 },
+    } = stripePaymentMethod
+
+    let stripeSetupIntent = await this.stripeService.setupIntents.create({
+      customer: stripeCustomerId,
+      payment_method: stripePaymentMethodId,
+      metadata: {
+        userId,
+        lastFourDigits: last4,
+        cardType: brand,
+        stripePaymentMethodId,
+        stripeCustomerId,
+      },
+    })
+
+    try {
+      stripeSetupIntent = await this.stripeService.setupIntents.confirm(
+        stripeSetupIntent.id,
+      )
+
+      const { status } = stripeSetupIntent
+
+      // TODO: handle setup intent for card that requires 3D secure authentication
+      if (status !== 'succeeded') {
+        throw new Error()
+      }
+
+      return this.paymentMethodService.create({
+        userId,
+        lastFourDigits: last4,
+        cardType: brand,
+        stripePaymentMethodId,
+        stripeCustomerId,
+      })
+    } catch (error) {
+      throw new BadRequestException(`This card is temporarily unsupported!`)
+    }
+  }
+
+  getCardList(userId: number) {
+    return this.paymentMethodService.findAll({ userId })
+  }
+
+  async deleteCard(userId: number, cardId: number) {
+    const existingCard = await this.paymentMethodService.findById(cardId)
+
+    if (!existingCard) {
+      throw new NotFoundException(`Card with ID ${cardId} does not exist!`)
+    }
+
+    if (existingCard.userId !== userId) {
+      throw new ForbiddenException(
+        'You are only allowed to delete your own card!',
+      )
+    }
+
+    const allUserCards = await this.paymentMethodService.findAll({ userId })
+    if (allUserCards.length === 1) {
+      throw new ForbiddenException(
+        'Please add another card before deleting your only card!',
+      )
+    }
+
+    return this.paymentMethodService.delete(cardId)
+  }
+
+  async topUpToWallet(
+    userId: number,
+    { paymentMethodId, amount }: TopUpToWalletDto,
+  ) {
+    const paymentMethod = await this.paymentMethodService.findById(
+      paymentMethodId,
+    )
+
+    if (!paymentMethod) {
+      throw new BadRequestException(
+        `Payment method with ID ${paymentMethodId} does not exist!`,
+      )
+    }
+
+    const {
+      stripeCustomerId,
+      stripePaymentMethodId,
+      userId: vUserId,
+    } = paymentMethod
+
+    if (userId !== vUserId) {
+      throw new ForbiddenException(`This payment method isn't your!`)
+    }
+
+    const wallet = await this.walletService.findOne({ userId })
+
+    const walletTransaction = await this.walletTransactionService.create({
+      walletId: wallet.id,
+      value: amount,
+      actionType: WalletActionType.TOP_UP,
+      description: 'Top up to wallet',
+    })
+
+    const stripePaymentIntent = await this.stripeService.paymentIntents.create({
+      amount,
+      currency: 'VND',
+      automatic_payment_methods: {
+        enabled: true,
+      },
+      payment_method: stripePaymentMethodId,
+      customer: stripeCustomerId,
+      metadata: {
+        walletTransactionId: walletTransaction.id,
+      },
+    })
+
+    try {
+      await this.stripeService.paymentIntents.confirm(stripePaymentIntent.id, {
+        return_url: 'https://example.com',
+      })
+    } catch (error) {
+      return { stripePaymentIntent }
+    }
+
+    return 'Top up to wallet successfully!'
+  }
+
+  async isOwnCards(userId: number, ...cardIds: number[]): Promise<boolean> {
+    const existingCards = await this.paymentMethodService.findAll({
+      id: In(cardIds),
+    })
+
+    if (!existingCards.length) {
+      return false
+    }
+
+    for (const { userId: vUserId } of existingCards) {
+      if (userId !== vUserId) {
+        return false
+      }
+    }
+
+    return true
   }
 }
