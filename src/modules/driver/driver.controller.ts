@@ -112,7 +112,8 @@ export class DriverController implements BaseController<DriverEntity> {
   @Auth(Role.NORMAL_USER)
   @Delete(':id/vehicles/:vehicleId')
   async deleteVehicle(
-    @Param() { id, vehicleId }: { id: number; vehicleId: number },
+    @Param('id', ParseIntPipe) id: number,
+    @Param('vehicleId', ParseIntPipe) vehicleId: number,
     @UserFromRequest() user: UserEntity,
   ) {
     if (!(await this.driverService.isValidDriver(id, user.id))) {
@@ -121,6 +122,6 @@ export class DriverController implements BaseController<DriverEntity> {
       )
     }
 
-    return this.driverService.deleteVehicle(+id, +vehicleId)
+    return this.driverService.deleteVehicle(id, vehicleId)
   }
 }
