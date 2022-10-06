@@ -4,7 +4,7 @@ export class CreateNewPasswordDto {
   @IsString()
   @IsNotEmpty()
   @IsOptional()
-  otp: string
+  otp?: string
 
   @IsString()
   @IsNotEmpty()

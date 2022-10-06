@@ -17,7 +17,7 @@ export class UpdateUserFirstTimeDto {
   @IsString()
   @Length(5, 20)
   @IsOptional()
-  username: string
+  username?: string
 
   @IsPhoneNumber('VI')
   phoneNumber: string

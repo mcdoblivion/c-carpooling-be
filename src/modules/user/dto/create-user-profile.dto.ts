@@ -22,5 +22,5 @@ export class CreateUserProfileDto {
 
   @IsString()
   @IsOptional()
-  avatarURL: string
+  avatarURL?: string
 }
