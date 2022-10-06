@@ -14,6 +14,8 @@ import { ApiTags } from '@nestjs/swagger'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
 import { UserEntity } from 'src/typeorm/entities'
 import { AuthService } from './auth.service'
+import { LoginDto } from './dto/login.dto'
+import { VerifyOtpDto } from './dto/otp.dto'
 import { SignupDto } from './dto/signup.dto'
 import { LocalAuthGuard } from './guards/local-auth.guard'
 
@@ -38,7 +40,7 @@ export class AuthController {
   }
 
   @Post('verify-signup')
-  async verifySignup(@Body('otp') otp: string) {
+  async verifySignup(@Body() { otp }: VerifyOtpDto) {
     try {
       return await this.authService.createNewAccount(otp)
     } catch (error) {
@@ -50,7 +52,7 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(@Request() req: { user: UserEntity }, @Body('otp') otp: string) {
+  async login(@Request() req: { user: UserEntity }, @Body() { otp }: LoginDto) {
     try {
       return await this.authService.login(req.user, otp)
     } catch (error) {
