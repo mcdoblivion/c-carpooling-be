@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common'
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import { formatSearchResult } from 'src/helpers/format-search-result'
 import { SearchDto } from 'src/helpers/search.dto'
 import { VehicleEntity } from 'src/typeorm/entities'
@@ -82,5 +86,21 @@ export class VehicleService extends BaseService<VehicleEntity> {
       order,
       total,
     )
+  }
+
+  async verifyVehicle(id: number): Promise<VehicleEntity> {
+    const existingVehicle = await this.findById(id)
+
+    if (!existingVehicle) {
+      throw new NotFoundException(`Vehicle with ID ${id} does not exist!`)
+    }
+
+    if (existingVehicle.isVerified) {
+      throw new BadRequestException(`Vehicle with ID has already verified!`)
+    }
+
+    existingVehicle.isVerified = true
+
+    return this.getRepository().save(existingVehicle)
   }
 }

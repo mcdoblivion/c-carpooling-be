@@ -1,4 +1,11 @@
-import { Controller, Get, Query } from '@nestjs/common'
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Put,
+  Query,
+} from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { SearchDto } from 'src/helpers/search.dto'
 import { VehicleEntity } from 'src/typeorm/entities'
@@ -17,5 +24,10 @@ export class VehicleController implements BaseController<VehicleEntity> {
   @Get()
   search(@Query() searchDto: SearchDto): Promise<SearchResult<VehicleEntity>> {
     return this.vehicleService.searchVehicles(searchDto)
+  }
+
+  @Put(':id/verify')
+  verifyVehicle(@Param('id', ParseIntPipe) id: number): Promise<VehicleEntity> {
+    return this.vehicleService.verifyVehicle(id)
   }
 }
