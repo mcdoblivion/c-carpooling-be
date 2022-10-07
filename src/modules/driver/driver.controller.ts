@@ -19,6 +19,7 @@ import { SearchResult } from 'src/types'
 import { Auth } from '../auth/decorators/auth.decorator'
 import { BaseController } from '../base/base.controller'
 import { CreateVehicleDto } from '../vehicle/dto/create-vehicle.dto'
+import { UpdateVehicleDto } from '../vehicle/dto/update-vehicle.dto'
 import { DriverService } from './driver.service'
 import { CreateDriverDto } from './dto/create-driver.dto'
 import { UpdateDriverDto } from './dto/update-driver.dto'
@@ -107,6 +108,23 @@ export class DriverController implements BaseController<DriverEntity> {
     }
 
     return this.driverService.addVehicle(id, createVehicleDto)
+  }
+
+  @Auth(Role.NORMAL_USER)
+  @Put(':id/vehicles/:vehicleId')
+  async updateVehicle(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('vehicleId', ParseIntPipe) vehicleId: number,
+    @Body() updateVehicleDto: UpdateVehicleDto,
+    @UserFromRequest() user: UserEntity,
+  ): Promise<VehicleEntity> {
+    if (!(await this.driverService.isValidDriver(id, user.id))) {
+      throw new ForbiddenException(
+        'You are only allowed to update your own vehicle!',
+      )
+    }
+
+    return this.driverService.updateVehicle(id, vehicleId, updateVehicleDto)
   }
 
   @Auth(Role.NORMAL_USER)

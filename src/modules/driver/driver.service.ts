@@ -14,6 +14,7 @@ import { Brackets, IsNull } from 'typeorm'
 import { BaseService } from '../base/base.service'
 import { CarpoolingGroupService } from '../carpooling-group/carpooling-group.service'
 import { CreateVehicleDto } from '../vehicle/dto/create-vehicle.dto'
+import { UpdateVehicleDto } from '../vehicle/dto/update-vehicle.dto'
 import { VehicleService } from '../vehicle/vehicle.service'
 import { CreateDriverDto } from './dto/create-driver.dto'
 import { UpdateDriverDto } from './dto/update-driver.dto'
@@ -121,6 +122,48 @@ export class DriverService extends BaseService<DriverEntity> {
     createVehicleDto: CreateVehicleDto,
   ): Promise<VehicleEntity> {
     return this.vehicleService.create({ ...createVehicleDto, driverId: id })
+  }
+
+  async updateVehicle(
+    driverId: number,
+    vehicleId: number,
+    updateVehicleDto: UpdateVehicleDto,
+  ): Promise<VehicleEntity> {
+    const existingVehicle = await this.vehicleService.findOne(
+      {
+        id: vehicleId,
+      },
+      {
+        relations: {
+          driver: true,
+        },
+      },
+    )
+
+    if (!vehicleId) {
+      throw new NotFoundException(
+        `Vehicle with ID ${vehicleId} does not exist!`,
+      )
+    }
+
+    if (existingVehicle.driverId !== driverId) {
+      throw new ForbiddenException('This vehicle is not your!')
+    }
+
+    const {
+      driver: { vehicleIdForCarpooling },
+    } = existingVehicle
+
+    if (vehicleId === vehicleIdForCarpooling) {
+      throw new BadRequestException(
+        `You are not allowed to update this vehicle because it's using for carpooling!`,
+      )
+    }
+
+    return this.vehicleService.update(vehicleId, {
+      ...updateVehicleDto,
+      isVerified: false,
+    })
   }
 
   async changeVehicleForCarpooling(
