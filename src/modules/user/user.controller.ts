@@ -21,6 +21,7 @@ import { SearchDto } from 'src/helpers/search.dto'
 import { UserEntity } from 'src/typeorm/entities'
 import { Role } from 'src/typeorm/enums'
 import { SearchResult } from 'src/types'
+import { CreateAddressDto } from '../address/dto/create-address.dto'
 import {
   Auth,
   AuthWithoutCompletedProfile,
@@ -200,5 +201,25 @@ export class UserController implements BaseController<UserEntity> {
     }
 
     return this.usersService.topUpToWallet(id, topUpToWalletDto)
+  }
+
+  // Carpooling
+  @Auth(Role.NORMAL_USER)
+  @Post(':id/addresses')
+  addAddress(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() createAddressDto: CreateAddressDto,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    if (id !== user.id) {
+      throw new ForbiddenException(
+        'You are only allowed to add your own address!',
+      )
+    }
+
+    return this.usersService.addAddress({
+      ...createAddressDto,
+      userId: id,
+    })
   }
 }

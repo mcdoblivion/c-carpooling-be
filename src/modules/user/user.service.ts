@@ -23,6 +23,8 @@ import { UserEntity, UserProfileEntity } from 'src/typeorm/entities'
 import { TwoFAMethod, WalletActionType } from 'src/typeorm/enums'
 import { SearchResult } from 'src/types'
 import { Brackets, In, IsNull, Not } from 'typeorm'
+import { AddressService } from '../address/address.service'
+import { CreateAddressDto } from '../address/dto/create-address.dto'
 import { AuthService } from '../auth/auth.service'
 import { BaseService } from '../base/base.service'
 import { PaymentMethodService } from '../payment-method/payment-method.service'
@@ -58,6 +60,7 @@ export class UserService extends BaseService<UserEntity> {
     private readonly paymentMethodService: PaymentMethodService,
     private readonly walletService: WalletService,
     private readonly walletTransactionService: WalletTransactionService,
+    private readonly addressService: AddressService,
   ) {
     super(userRepository)
   }
@@ -649,5 +652,29 @@ export class UserService extends BaseService<UserEntity> {
     }
 
     return true
+  }
+
+  // Carpooling
+
+  async addAddress({
+    userId,
+    fullAddress,
+    latitude,
+    longitude,
+    type,
+  }: CreateAddressDto & { userId: number }) {
+    const existingAddress = await this.addressService.findOne({ userId, type })
+
+    if (existingAddress) {
+      throw new BadRequestException(`You has already added a ${type} address!`)
+    }
+
+    return this.addressService.create({
+      userId,
+      fullAddress,
+      latitude,
+      longitude,
+      type,
+    })
   }
 }
