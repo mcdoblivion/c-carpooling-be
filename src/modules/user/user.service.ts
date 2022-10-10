@@ -19,12 +19,17 @@ import { S3Service } from 'src/services/aws/s3.service'
 import { MailService } from 'src/services/mail/mail.service'
 import { SmsService } from 'src/services/sms/sms.service'
 import { StripeService } from 'src/services/stripe/stripe.service'
-import { UserEntity, UserProfileEntity } from 'src/typeorm/entities'
+import {
+  AddressEntity,
+  UserEntity,
+  UserProfileEntity,
+} from 'src/typeorm/entities'
 import { TwoFAMethod, WalletActionType } from 'src/typeorm/enums'
 import { SearchResult } from 'src/types'
 import { Brackets, In, IsNull, Not } from 'typeorm'
 import { AddressService } from '../address/address.service'
 import { CreateAddressDto } from '../address/dto/create-address.dto'
+import { UpdateAddressDto } from '../address/dto/update-address.dto'
 import { AuthService } from '../auth/auth.service'
 import { BaseService } from '../base/base.service'
 import { PaymentMethodService } from '../payment-method/payment-method.service'
@@ -662,7 +667,7 @@ export class UserService extends BaseService<UserEntity> {
     latitude,
     longitude,
     type,
-  }: CreateAddressDto & { userId: number }) {
+  }: CreateAddressDto & { userId: number }): Promise<AddressEntity> {
     const existingAddress = await this.addressService.findOne({ userId, type })
 
     if (existingAddress) {
@@ -676,5 +681,40 @@ export class UserService extends BaseService<UserEntity> {
       longitude,
       type,
     })
+  }
+
+  async updateAddress(
+    addressId: number,
+    updateAddressDto: UpdateAddressDto,
+    userId: number,
+  ): Promise<AddressEntity> {
+    const existingAddress = await this.addressService.findOne(
+      { id: addressId },
+      {
+        relations: {
+          user: true,
+        },
+      },
+    )
+
+    if (!existingAddress) {
+      throw new NotFoundException(
+        `Address with ID ${addressId} does not exist!`,
+      )
+    }
+
+    if (existingAddress.userId !== userId) {
+      throw new ForbiddenException(
+        'You are only allowed to update your own address!',
+      )
+    }
+
+    if (existingAddress.user.carpoolingGroupId) {
+      throw new BadRequestException(
+        'You are only allowed to update your address when you are not in a carpooling group!',
+      )
+    }
+
+    return this.addressService.update(addressId, updateAddressDto)
   }
 }
