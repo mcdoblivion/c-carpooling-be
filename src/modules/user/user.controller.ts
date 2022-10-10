@@ -18,9 +18,11 @@ import { ApiTags } from '@nestjs/swagger'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
 import { UserFromRequest } from 'src/helpers/get-user-from-request.decorator'
 import { SearchDto } from 'src/helpers/search.dto'
-import { UserEntity } from 'src/typeorm/entities'
+import { AddressEntity, UserEntity } from 'src/typeorm/entities'
 import { Role } from 'src/typeorm/enums'
 import { SearchResult } from 'src/types'
+import { CreateAddressDto } from '../address/dto/create-address.dto'
+import { UpdateAddressDto } from '../address/dto/update-address.dto'
 import {
   Auth,
   AuthWithoutCompletedProfile,
@@ -200,5 +202,42 @@ export class UserController implements BaseController<UserEntity> {
     }
 
     return this.usersService.topUpToWallet(id, topUpToWalletDto)
+  }
+
+  // Carpooling
+  @Auth(Role.NORMAL_USER)
+  @Post(':id/addresses')
+  addAddress(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() createAddressDto: CreateAddressDto,
+    @UserFromRequest() user: UserEntity,
+  ): Promise<AddressEntity> {
+    if (id !== user.id) {
+      throw new ForbiddenException(
+        'You are only allowed to add your own address!',
+      )
+    }
+
+    return this.usersService.addAddress({
+      ...createAddressDto,
+      userId: id,
+    })
+  }
+
+  @Auth(Role.NORMAL_USER)
+  @Put(':id/addresses/:addressId')
+  updateAddress(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('addressId', ParseIntPipe) addressId: number,
+    @Body() updateAddressDto: UpdateAddressDto,
+    @UserFromRequest() user: UserEntity,
+  ): Promise<AddressEntity> {
+    if (id !== user.id) {
+      throw new ForbiddenException(
+        'You are only allowed to update your own address!',
+      )
+    }
+
+    return this.usersService.updateAddress(addressId, updateAddressDto, id)
   }
 }
