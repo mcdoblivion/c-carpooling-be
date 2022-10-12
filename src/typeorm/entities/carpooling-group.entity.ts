@@ -4,7 +4,7 @@ import { BaseEntity } from './base.entity'
 import { UserEntity } from './user.entity'
 
 @Entity({ name: 'carpooling_groups' })
-@Index(['groupName', 'driverUserId'], {
+@Index(['driverUserId'], {
   unique: true,
   where: '"deletedAt" IS NULL',
 })
@@ -22,10 +22,10 @@ export class CarpoolingGroupEntity extends BaseEntity {
   @Column()
   groupName: string
 
-  @Column({ type: 'time with time zone' })
+  @Column({ type: 'time without time zone' })
   departureTime: Date
 
-  @Column({ type: 'time with time zone' })
+  @Column({ type: 'time without time zone' })
   comebackTime: Date
 
   @Column()

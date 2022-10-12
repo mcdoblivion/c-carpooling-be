@@ -1,21 +1,14 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common'
+import { Body, Controller, Post } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
-import { SearchDto } from 'src/helpers/search.dto'
+import { UserFromRequest } from 'src/helpers/get-user-from-request.decorator'
 import { CarpoolingGroupEntity, UserEntity } from 'src/typeorm/entities'
-import { SearchResult } from 'src/types'
+import { Role } from 'src/typeorm/enums'
+import { Auth } from '../auth/decorators/auth.decorator'
 import { BaseController } from '../base/base.controller'
 import { CarpoolingGroupService } from './carpooling-group.service'
 import { CreateCarpoolingGroupDto } from './dto/create-carpooling-group.dto'
-import { UpdateCarpoolingGroupDto } from './dto/update-carpooling-group.dto'
 
+@Auth(Role.NORMAL_USER)
 @ApiTags('Carpooling Group')
 @Controller('carpooling-groups')
 export class CarpoolingGroupController
@@ -24,32 +17,15 @@ export class CarpoolingGroupController
   constructor(
     private readonly carpoolingGroupService: CarpoolingGroupService,
   ) {}
-  search(searchDto: SearchDto): Promise<SearchResult<CarpoolingGroupEntity>> {
-    throw new Error('Method not implemented.')
-  }
-  getAll(): Promise<CarpoolingGroupEntity[]> {
-    throw new Error('Method not implemented.')
-  }
-  getOneById(id: number): Promise<CarpoolingGroupEntity> {
-    throw new Error('Method not implemented.')
-  }
+
+  @Post()
   create(
-    createDto: Record<string, any>,
-    createBy?: UserEntity,
+    @Body() createDto: CreateCarpoolingGroupDto,
+    @UserFromRequest() createBy?: UserEntity,
   ): Promise<CarpoolingGroupEntity> {
-    throw new Error('Method not implemented.')
-  }
-  updateOneById(
-    id: number,
-    updateDto: Record<string, any>,
-    updateBy?: UserEntity,
-  ): Promise<CarpoolingGroupEntity> {
-    throw new Error('Method not implemented.')
-  }
-  deleteOneById(id: number): Promise<any> {
-    throw new Error('Method not implemented.')
-  }
-  deleteMany({ IDs }: { IDs: number[] }): Promise<any> {
-    throw new Error('Method not implemented.')
+    return this.carpoolingGroupService.createCarpoolingGroup(
+      createDto,
+      createBy.id,
+    )
   }
 }
