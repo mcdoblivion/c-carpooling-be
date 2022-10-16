@@ -14,7 +14,7 @@ export class CarpoolingGroupEntity extends BaseEntity {
 
   @OneToOne(() => UserEntity, { cascade: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'driverUserId' })
-  driver: UserEntity
+  driverUser: UserEntity
 
   @Column()
   driverUserId: number

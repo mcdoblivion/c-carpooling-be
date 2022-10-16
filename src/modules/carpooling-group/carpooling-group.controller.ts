@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common'
+import { Body, Controller, Get, Post, Query } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { UserFromRequest } from 'src/helpers/get-user-from-request.decorator'
 import { CarpoolingGroupEntity, UserEntity } from 'src/typeorm/entities'
@@ -7,6 +7,7 @@ import { Auth } from '../auth/decorators/auth.decorator'
 import { BaseController } from '../base/base.controller'
 import { CarpoolingGroupService } from './carpooling-group.service'
 import { CreateCarpoolingGroupDto } from './dto/create-carpooling-group.dto'
+import { FindCarpoolingGroupDto } from './dto/find-carpooling-group.dto'
 
 @Auth(Role.NORMAL_USER)
 @ApiTags('Carpooling Group')
@@ -17,6 +18,17 @@ export class CarpoolingGroupController
   constructor(
     private readonly carpoolingGroupService: CarpoolingGroupService,
   ) {}
+
+  @Get()
+  findCarpoolingGroup(
+    @Query() findCarpoolingGroupDto: FindCarpoolingGroupDto,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    return this.carpoolingGroupService.findCarpoolingGroupDto(
+      findCarpoolingGroupDto,
+      user.id,
+    )
+  }
 
   @Post()
   create(
