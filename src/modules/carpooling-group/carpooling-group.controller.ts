@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { UserFromRequest } from 'src/helpers/get-user-from-request.decorator'
 import { CarpoolingGroupEntity, UserEntity } from 'src/typeorm/entities'
@@ -39,5 +47,13 @@ export class CarpoolingGroupController
       createDto,
       createBy.id,
     )
+  }
+
+  @Get(':id/fee')
+  getCarpoolingFee(
+    @Param('id', ParseIntPipe) id: number,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    return this.carpoolingGroupService.getCarpoolingFee(id, user.id)
   }
 }

@@ -10,7 +10,7 @@ import { UserEntity } from './user.entity'
 })
 export class CarpoolingGroupEntity extends BaseEntity {
   @OneToMany(() => UserEntity, (user: UserEntity) => user.carpoolingGroup)
-  carpoolers: UserEntity
+  carpoolers: UserEntity[]
 
   @OneToOne(() => UserEntity, { cascade: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'driverUserId' })

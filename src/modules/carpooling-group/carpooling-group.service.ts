@@ -6,13 +6,19 @@ import {
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import getDistance from '@turf/distance'
-import { point } from '@turf/helpers'
+import { point, Units } from '@turf/helpers'
 import * as Dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
-import { CarpoolingGroupEntity, UserEntity } from 'src/typeorm/entities'
-import { AddressType, RequestStatus } from 'src/typeorm/enums'
+import {
+  AddressEntity,
+  CarpoolingGroupEntity,
+  UserEntity,
+} from 'src/typeorm/entities'
+import { AddressType, FuelType, RequestStatus } from 'src/typeorm/enums'
+import { WalletTransactionStatus } from 'src/typeorm/enums/wallet-transaction-status'
 import { TypeOrmService } from 'src/typeorm/typeorm.service'
 import { BaseService } from '../base/base.service'
+import { CarpoolingPaymentService } from '../carpooling-payment/carpooling-payment.service'
 import { UserService } from '../user/user.service'
 import { CreateCarpoolingGroupDto } from './dto/create-carpooling-group.dto'
 import { FindCarpoolingGroupDto } from './dto/find-carpooling-group.dto'
@@ -24,6 +30,7 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
     private readonly config: ConfigService,
     private readonly typeOrmService: TypeOrmService,
     private readonly userService: UserService,
+    private readonly carpoolingPaymentService: CarpoolingPaymentService,
   ) {
     super(typeOrmService.getRepository(CarpoolingGroupEntity))
   }
@@ -115,13 +122,12 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
     >
 
     const userAddresses = user.addresses
-    const { latitude: userHomeLatitude, longitude: userHomeLongitude } =
-      userAddresses.find((address) => address.type === AddressType.HOME)
-    const { latitude: userWorkLatitude, longitude: userWorkLongitude } =
-      userAddresses.find((address) => address.type === AddressType.WORK)
-
-    const userHomePoint = point([+userHomeLongitude, +userHomeLatitude])
-    const userWorkPoint = point([+userWorkLongitude, +userWorkLatitude])
+    const userHomeAddress = userAddresses.find(
+      (address) => address.type === AddressType.HOME,
+    )
+    const userWorkAddress = userAddresses.find(
+      (address) => address.type === AddressType.WORK,
+    )
 
     const maximumDistance = this.config.get<number>(
       'CARPOOLING_MAXIMUM_DISTANCE_IN_METERS',
@@ -133,20 +139,23 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
           driverUser: { addresses },
         } = carpoolingGroup
 
-        const { latitude: homeLatitude, longitude: homeLongitude } =
-          addresses.find((address) => address.type === AddressType.HOME)
-        const { latitude: workLatitude, longitude: workLongitude } =
-          addresses.find((address) => address.type === AddressType.WORK)
+        const homeAddress = addresses.find(
+          (address) => address.type === AddressType.HOME,
+        )
+        const workAddress = addresses.find(
+          (address) => address.type === AddressType.WORK,
+        )
 
-        const homePoint = point([+homeLongitude, +homeLatitude])
-        const workPoint = point([+workLongitude, +workLatitude])
-
-        const homeDistance = getDistance(userHomePoint, homePoint, {
-          units: 'meters',
-        })
-        const workDistance = getDistance(userWorkPoint, workPoint, {
-          units: 'meters',
-        })
+        const homeDistance = this._getDistance(
+          homeAddress,
+          userHomeAddress,
+          'meters',
+        )
+        const workDistance = this._getDistance(
+          workAddress,
+          userWorkAddress,
+          'meters',
+        )
 
         return { ...carpoolingGroup, homeDistance, workDistance }
       })
@@ -195,6 +204,7 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
         },
         relations: {
           driver: true,
+          addresses: true,
         },
         lock: {
           mode: 'optimistic',
@@ -220,6 +230,12 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
 
       if (existingUser.carpoolingGroupId) {
         throw new BadRequestException('You are already in a carpooling group!')
+      }
+
+      if (existingUser?.addresses?.length !== 2) {
+        throw new BadRequestException(
+          'You need to add your addresses before creating a carpooling group!',
+        )
       }
 
       const vDepartureTime = Dayjs.utc(departureTime)
@@ -251,5 +267,153 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
     } finally {
       queryRunner.release()
     }
+  }
+
+  async getCarpoolingFee(
+    carpoolingGroupId: number,
+    userId: number,
+  ): Promise<{
+    pricePerUserPerMoveTurn: number
+    priceForCurrentMonth: number
+    savingCostInPercentage: number
+  }> {
+    const carpoolingGroup = await this.findOne(
+      { id: carpoolingGroupId },
+      {
+        relations: {
+          driverUser: {
+            driver: {
+              vehicleForCarpooling: true,
+            },
+            addresses: true,
+          },
+          carpoolers: true,
+        },
+      },
+    )
+
+    if (!carpoolingGroup) {
+      throw new NotFoundException(
+        `Carpooling group with ID ${carpoolingGroupId} does not exist!`,
+      )
+    }
+
+    const {
+      carpoolers,
+      driverUser: {
+        driver: {
+          vehicleForCarpooling: { fuelConsumptionPer100kms, fuelType },
+        },
+        addresses,
+      },
+    } = carpoolingGroup
+
+    const fuelPrice = this._getCurrentFuelPrice(fuelType)
+    const carpoolingDistanceInKms = this._getDistance(
+      addresses[0],
+      addresses[1],
+      'kilometers',
+    )
+
+    const fuelConsumptionPerMoveTurn =
+      (carpoolingDistanceInKms * fuelConsumptionPer100kms) / 100
+
+    const rawPricePerMoveTurn = fuelPrice * fuelConsumptionPerMoveTurn
+
+    const carpoolingFeeRateInPercentage = +this.config.get<number>(
+      'CARPOOLING_FEE_RATE_IN_PERCENTAGE',
+    )
+
+    const pricePerMoveTurn =
+      rawPricePerMoveTurn +
+      (rawPricePerMoveTurn * carpoolingFeeRateInPercentage) / 100
+
+    const numberOfCarpoolers = carpoolers.length + 1
+
+    const pricePerUserPerMoveTurn = Math.round(
+      pricePerMoveTurn / numberOfCarpoolers,
+    )
+
+    const remainingBusinessDaysInMonth =
+      this._countRemainingBusinessDaysInMonth()
+
+    const priceForCurrentMonth =
+      pricePerUserPerMoveTurn * remainingBusinessDaysInMonth * 2
+
+    const savingCostInPercentage = Math.round(
+      ((pricePerMoveTurn - pricePerUserPerMoveTurn) / pricePerMoveTurn) * 100,
+    )
+
+    const existingPayment = await this.carpoolingPaymentService.findOne(
+      {
+        userId,
+        carpoolingGroupId,
+        status: WalletTransactionStatus.PENDING,
+      },
+      {
+        order: {
+          updatedAt: 'DESC',
+        },
+      },
+    )
+
+    if (!existingPayment) {
+      await this.carpoolingPaymentService.create({
+        userId,
+        carpoolingGroupId,
+        carpoolingFee: priceForCurrentMonth,
+      })
+    } else {
+      await this.carpoolingPaymentService.update(existingPayment.id, {
+        carpoolingFee: priceForCurrentMonth,
+      })
+    }
+
+    return {
+      pricePerUserPerMoveTurn,
+      priceForCurrentMonth,
+      savingCostInPercentage,
+    }
+  }
+
+  private _countRemainingBusinessDaysInMonth() {
+    let currentDate = Dayjs()
+    let count = 0
+
+    const firstDayOfNextMonth = currentDate.add(1, 'months').startOf('month')
+
+    while (firstDayOfNextMonth.diff(currentDate) > 0) {
+      if (currentDate.day() !== 0 && currentDate.day() !== 6) {
+        ++count
+      }
+
+      currentDate = currentDate.add(1, 'days')
+    }
+
+    return count
+  }
+
+  private _getCurrentFuelPrice(fuelType: FuelType) {
+    if (fuelType === FuelType.DIESEL) {
+      return 20000
+    } else if (fuelType === FuelType.GASOLINE) {
+      return 25000
+    }
+
+    return 25000
+  }
+
+  private _getDistance(
+    address1: AddressEntity,
+    address2: AddressEntity,
+    units: Units,
+  ) {
+    const { latitude: latitude1, longitude: longitude1 } = address1
+    const { latitude: latitude2, longitude: longitude2 } = address2
+
+    const point1 = point([+longitude1, +latitude1])
+    const point2 = point([+longitude2, +latitude2])
+
+    return getDistance(point1, point2, { units })
   }
 }
