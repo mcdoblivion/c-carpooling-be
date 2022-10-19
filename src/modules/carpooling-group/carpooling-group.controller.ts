@@ -1,21 +1,25 @@
 import {
+  Body,
   Controller,
   Get,
-  Post,
-  Body,
-  Patch,
+  HttpCode,
+  HttpStatus,
   Param,
-  Delete,
+  ParseIntPipe,
+  Post,
+  Query,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
-import { SearchDto } from 'src/helpers/search.dto'
+import { UserFromRequest } from 'src/helpers/get-user-from-request.decorator'
 import { CarpoolingGroupEntity, UserEntity } from 'src/typeorm/entities'
-import { SearchResult } from 'src/types'
+import { Role } from 'src/typeorm/enums'
+import { Auth } from '../auth/decorators/auth.decorator'
 import { BaseController } from '../base/base.controller'
 import { CarpoolingGroupService } from './carpooling-group.service'
 import { CreateCarpoolingGroupDto } from './dto/create-carpooling-group.dto'
-import { UpdateCarpoolingGroupDto } from './dto/update-carpooling-group.dto'
+import { FindCarpoolingGroupDto } from './dto/find-carpooling-group.dto'
 
+@Auth(Role.NORMAL_USER)
 @ApiTags('Carpooling Group')
 @Controller('carpooling-groups')
 export class CarpoolingGroupController
@@ -24,32 +28,59 @@ export class CarpoolingGroupController
   constructor(
     private readonly carpoolingGroupService: CarpoolingGroupService,
   ) {}
-  search(searchDto: SearchDto): Promise<SearchResult<CarpoolingGroupEntity>> {
-    throw new Error('Method not implemented.')
+
+  @Get()
+  findCarpoolingGroup(
+    @Query() findCarpoolingGroupDto: FindCarpoolingGroupDto,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    return this.carpoolingGroupService.findCarpoolingGroupDto(
+      findCarpoolingGroupDto,
+      user.id,
+    )
   }
-  getAll(): Promise<CarpoolingGroupEntity[]> {
-    throw new Error('Method not implemented.')
-  }
-  getOneById(id: number): Promise<CarpoolingGroupEntity> {
-    throw new Error('Method not implemented.')
-  }
+
+  @Post()
   create(
-    createDto: Record<string, any>,
-    createBy?: UserEntity,
+    @Body() createDto: CreateCarpoolingGroupDto,
+    @UserFromRequest() createBy?: UserEntity,
   ): Promise<CarpoolingGroupEntity> {
-    throw new Error('Method not implemented.')
+    return this.carpoolingGroupService.createCarpoolingGroup(
+      createDto,
+      createBy.id,
+    )
   }
-  updateOneById(
-    id: number,
-    updateDto: Record<string, any>,
-    updateBy?: UserEntity,
-  ): Promise<CarpoolingGroupEntity> {
-    throw new Error('Method not implemented.')
+
+  @Get(':id/fee')
+  async getCarpoolingFee(
+    @Param('id', ParseIntPipe) id: number,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    const {
+      pricePerUserPerMoveTurn,
+      priceForCurrentMonth,
+      savingCostInPercentage,
+    } = await this.carpoolingGroupService.getCarpoolingFee(id)
+
+    this.carpoolingGroupService.updateCarpoolingPayment(
+      id,
+      user.id,
+      priceForCurrentMonth,
+    )
+
+    return {
+      pricePerUserPerMoveTurn,
+      priceForCurrentMonth,
+      savingCostInPercentage,
+    }
   }
-  deleteOneById(id: number): Promise<any> {
-    throw new Error('Method not implemented.')
-  }
-  deleteMany({ IDs }: { IDs: number[] }): Promise<any> {
-    throw new Error('Method not implemented.')
+
+  @Post(':id/join')
+  @HttpCode(HttpStatus.OK)
+  joinCarpoolingGroup(
+    @Param('id', ParseIntPipe) id: number,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    return this.carpoolingGroupService.joinCarpoolingGroup(id, user.id)
   }
 }

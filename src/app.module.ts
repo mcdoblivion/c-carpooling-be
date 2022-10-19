@@ -31,6 +31,7 @@ import { TypeOrmModule } from './typeorm/typeorm.module'
 import { TypeOrmService } from './typeorm/typeorm.service'
 import { StripeController } from './webhooks/stripe.controller'
 import { AddressModule } from './modules/address/address.module'
+import { CarpoolingPaymentModule } from './modules/carpooling-payment/carpooling-payment.module'
 
 const config = new ConfigService()
 
@@ -77,6 +78,7 @@ const config = new ConfigService()
     WalletModule,
     WalletTransactionModule,
     AddressModule,
+    CarpoolingPaymentModule,
   ],
   controllers: [AppController, StripeController],
   providers: [],

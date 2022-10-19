@@ -86,7 +86,21 @@ export class DriverService extends BaseService<DriverEntity> {
   async registerToBecomeDriver(
     createDriverDto: CreateDriverDto & { userId: number },
   ): Promise<DriverEntity> {
-    return this.create(createDriverDto)
+    const existingDriver = await this.findOne({
+      userId: createDriverDto.userId,
+    })
+
+    if (existingDriver?.status === RequestStatus.ACCEPTED) {
+      throw new BadRequestException(
+        'Your request to become a driver has already been accepted!',
+      )
+    }
+
+    return this.getRepository().save({
+      ...(existingDriver && { id: existingDriver.id }),
+      ...createDriverDto,
+      status: RequestStatus.PENDING,
+    })
   }
 
   async updateDriver(
