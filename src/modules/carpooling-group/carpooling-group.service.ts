@@ -12,9 +12,17 @@ import * as utc from 'dayjs/plugin/utc'
 import {
   AddressEntity,
   CarpoolingGroupEntity,
+  CarpoolingPaymentEntity,
   UserEntity,
+  WalletEntity,
+  WalletTransactionEntity,
 } from 'src/typeorm/entities'
-import { AddressType, FuelType, RequestStatus } from 'src/typeorm/enums'
+import {
+  AddressType,
+  FuelType,
+  RequestStatus,
+  WalletActionType,
+} from 'src/typeorm/enums'
 import { WalletTransactionStatus } from 'src/typeorm/enums/wallet-transaction-status'
 import { TypeOrmService } from 'src/typeorm/typeorm.service'
 import { BaseService } from '../base/base.service'
@@ -269,10 +277,7 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
     }
   }
 
-  async getCarpoolingFee(
-    carpoolingGroupId: number,
-    userId: number,
-  ): Promise<{
+  async getCarpoolingFee(carpoolingGroupId: number): Promise<{
     pricePerUserPerMoveTurn: number
     priceForCurrentMonth: number
     savingCostInPercentage: number
@@ -302,11 +307,21 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
       carpoolers,
       driverUser: {
         driver: {
-          vehicleForCarpooling: { fuelConsumptionPer100kms, fuelType },
+          vehicleForCarpooling: {
+            fuelConsumptionPer100kms,
+            fuelType,
+            numberOfSeats,
+          },
         },
         addresses,
       },
     } = carpoolingGroup
+
+    if (carpoolers.length >= numberOfSeats) {
+      throw new BadRequestException(
+        'Carpooling group has already been enough members!',
+      )
+    }
 
     const fuelPrice = this._getCurrentFuelPrice(fuelType)
     const carpoolingDistanceInKms = this._getDistance(
@@ -344,6 +359,160 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
       ((pricePerMoveTurn - pricePerUserPerMoveTurn) / pricePerMoveTurn) * 100,
     )
 
+    return {
+      pricePerUserPerMoveTurn,
+      priceForCurrentMonth,
+      savingCostInPercentage,
+    }
+  }
+
+  async joinCarpoolingGroup(carpoolingGroupId: number, userId: number) {
+    const queryRunner = this.typeOrmService.createQueryRunner()
+    await queryRunner.connect()
+    await queryRunner.startTransaction()
+
+    try {
+      const userRepository = queryRunner.manager.getRepository(UserEntity)
+      const walletRepository = queryRunner.manager.getRepository(WalletEntity)
+      const walletTransactionRepository = queryRunner.manager.getRepository(
+        WalletTransactionEntity,
+      )
+      const carpoolingPaymentRepository = queryRunner.manager.getRepository(
+        CarpoolingPaymentEntity,
+      )
+      const carpoolingGroupRepository = queryRunner.manager.getRepository(
+        CarpoolingGroupEntity,
+      )
+
+      const user = await userRepository.findOne({
+        where: {
+          id: userId,
+        },
+        relations: {
+          wallet: true,
+        },
+        lock: {
+          mode: 'optimistic',
+          version: 0,
+        },
+      })
+
+      if (user.carpoolingGroupId) {
+        throw new BadRequestException('You are already in a carpooling group!')
+      }
+
+      const [existingPayment, { priceForCurrentMonth }] = await Promise.all([
+        carpoolingPaymentRepository.findOne({
+          where: {
+            userId,
+            carpoolingGroupId,
+            status: WalletTransactionStatus.PENDING,
+          },
+          order: {
+            id: 'DESC',
+          },
+          lock: {
+            mode: 'optimistic',
+            version: 0,
+          },
+        }),
+
+        this.getCarpoolingFee(carpoolingGroupId),
+      ])
+
+      if (
+        !existingPayment ||
+        existingPayment.carpoolingFee !== priceForCurrentMonth
+      ) {
+        throw new BadRequestException(
+          'Carpooling fee has been changed. Please refresh and try again!',
+        )
+      }
+
+      const {
+        wallet: { id: walletId, currentBalance },
+      } = user
+
+      if (currentBalance < priceForCurrentMonth) {
+        throw new BadRequestException(
+          'Your balance is not enough for carpooling fee. Please top up then try again!',
+        )
+      }
+
+      const carpoolingGroup = await carpoolingGroupRepository.findOne({
+        where: {
+          id: carpoolingGroupId,
+        },
+        relations: {
+          driverUser: {
+            driver: {
+              vehicleForCarpooling: true,
+            },
+          },
+          carpoolers: true,
+        },
+        lock: {
+          mode: 'optimistic',
+          version: 0,
+        },
+      })
+
+      const {
+        carpoolers,
+        driverUser: {
+          driver: {
+            vehicleForCarpooling: { numberOfSeats },
+          },
+        },
+      } = carpoolingGroup
+
+      if (carpoolers.length >= numberOfSeats) {
+        throw new BadRequestException(
+          'Carpooling group has already been enough members!',
+        )
+      }
+
+      user.carpoolingGroupId = carpoolingGroupId
+
+      await Promise.all([
+        userRepository.save(user),
+
+        carpoolingPaymentRepository.update(
+          { id: existingPayment.id },
+          { status: WalletTransactionStatus.COMPLETED },
+        ),
+
+        walletRepository.decrement(
+          { id: walletId },
+          'currentBalance',
+          priceForCurrentMonth,
+        ),
+
+        walletTransactionRepository.insert({
+          walletId,
+          actionType: WalletActionType.SPENT,
+          value: priceForCurrentMonth,
+          description: 'Join carpooling group!',
+          status: WalletTransactionStatus.COMPLETED,
+        }),
+      ])
+
+      await queryRunner.commitTransaction()
+
+      return true
+    } catch (error) {
+      await queryRunner.rollbackTransaction()
+      throw error
+    } finally {
+      queryRunner.release()
+    }
+  }
+
+  async updateCarpoolingPayment(
+    carpoolingGroupId: number,
+    userId: number,
+    carpoolingFee: number,
+  ): Promise<CarpoolingPaymentEntity> {
     const existingPayment = await this.carpoolingPaymentService.findOne(
       {
         userId,
@@ -358,21 +527,15 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
     )
 
     if (!existingPayment) {
-      await this.carpoolingPaymentService.create({
+      return this.carpoolingPaymentService.create({
         userId,
         carpoolingGroupId,
-        carpoolingFee: priceForCurrentMonth,
+        carpoolingFee,
       })
     } else {
-      await this.carpoolingPaymentService.update(existingPayment.id, {
-        carpoolingFee: priceForCurrentMonth,
+      return this.carpoolingPaymentService.update(existingPayment.id, {
+        carpoolingFee,
       })
-    }
-
-    return {
-      pricePerUserPerMoveTurn,
-      priceForCurrentMonth,
-      savingCostInPercentage,
     }
   }
 

@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Post,
@@ -50,10 +52,35 @@ export class CarpoolingGroupController
   }
 
   @Get(':id/fee')
-  getCarpoolingFee(
+  async getCarpoolingFee(
     @Param('id', ParseIntPipe) id: number,
     @UserFromRequest() user: UserEntity,
   ) {
-    return this.carpoolingGroupService.getCarpoolingFee(id, user.id)
+    const {
+      pricePerUserPerMoveTurn,
+      priceForCurrentMonth,
+      savingCostInPercentage,
+    } = await this.carpoolingGroupService.getCarpoolingFee(id)
+
+    this.carpoolingGroupService.updateCarpoolingPayment(
+      id,
+      user.id,
+      priceForCurrentMonth,
+    )
+
+    return {
+      pricePerUserPerMoveTurn,
+      priceForCurrentMonth,
+      savingCostInPercentage,
+    }
+  }
+
+  @Post(':id/join')
+  @HttpCode(HttpStatus.OK)
+  joinCarpoolingGroup(
+    @Param('id', ParseIntPipe) id: number,
+    @UserFromRequest() user: UserEntity,
+  ) {
+    return this.carpoolingGroupService.joinCarpoolingGroup(id, user.id)
   }
 }
