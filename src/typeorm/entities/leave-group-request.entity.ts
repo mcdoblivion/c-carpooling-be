@@ -1,6 +1,5 @@
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm'
 import { CarpoolingGroupEntity } from '.'
-import { RequestStatus } from '../enums'
 import { BaseEntity } from './base.entity'
 import { UserEntity } from './user.entity'
 
@@ -30,6 +29,6 @@ export class LeaveGroupRequestEntity extends BaseEntity {
   @Column({ type: 'date' })
   date: Date
 
-  @Column({ type: 'enum', enum: RequestStatus })
-  status: RequestStatus
+  @Column({ type: 'boolean', default: false })
+  isProcessed: boolean
 }
