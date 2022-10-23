@@ -19,6 +19,9 @@ export class TypeOrmService extends DataSource {
       subscribers,
       entities,
       logging: config.get<string>('DB_LOGGING') === 'true',
+      cache: {
+        duration: 30000, // 30s
+      },
     })
   }
 }
