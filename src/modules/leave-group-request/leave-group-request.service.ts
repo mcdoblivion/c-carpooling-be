@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import * as Dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
@@ -7,16 +11,22 @@ import { TypeOrmService } from 'src/typeorm/typeorm.service'
 import { BaseService } from '../base/base.service'
 import { UserService } from '../user/user.service'
 import { CreateLeaveGroupRequestDto } from './dto/create-leave-group-request.dto'
+import { UpdateLeaveGroupRequestDto } from './dto/update-leave-group-request.dto'
 Dayjs.extend(utc)
 
 @Injectable()
 export class LeaveGroupRequestService extends BaseService<LeaveGroupRequestEntity> {
+  private readonly minimumDaysToLeaveGroup: number
+
   constructor(
     private readonly config: ConfigService,
     private readonly typeOrmService: TypeOrmService,
     private readonly userService: UserService,
   ) {
     super(typeOrmService.getRepository(LeaveGroupRequestEntity))
+    this.minimumDaysToLeaveGroup = +config.get<number>(
+      'MINIMUM_DAYS_TO_LEAVE_GROUP',
+    )
   }
 
   async createLeaveGroupRequest(
@@ -41,23 +51,51 @@ export class LeaveGroupRequestService extends BaseService<LeaveGroupRequestEntit
       )
     }
 
-    const minimumDaysToLeaveGroup = +this.config.get<number>(
-      'MINIMUM_DAYS_TO_LEAVE_GROUP',
-    )
-
-    const dayjsDate = Dayjs.utc(date).startOf('day')
-
-    if (
-      Dayjs()
-        .startOf('day')
-        .add(minimumDaysToLeaveGroup, 'days')
-        .isAfter(dayjsDate)
-    ) {
+    if (!this._isValidDateToLeaveCarpoolingGroup(date)) {
       throw new BadRequestException(
-        `The minimum waiting time before leaving the group is ${minimumDaysToLeaveGroup} days!`,
+        `The minimum waiting time before leaving the group is ${this.minimumDaysToLeaveGroup} days!`,
       )
     }
 
     return this.create({ userId, carpoolingGroupId, date })
+  }
+
+  async updateLeaveGroupRequest(
+    id: number,
+    { date }: UpdateLeaveGroupRequestDto,
+    userId: number,
+  ): Promise<LeaveGroupRequestEntity> {
+    const existingRequest = await this.findOne({
+      id,
+      userId,
+      isProcessed: false,
+    })
+
+    if (!existingRequest) {
+      throw new NotFoundException(
+        `The request with ID ${id} does not exist or has already been processed!`,
+      )
+    }
+
+    const { createdAt } = existingRequest
+    if (!this._isValidDateToLeaveCarpoolingGroup(date, createdAt)) {
+      throw new BadRequestException(
+        `The minimum waiting time before leaving the group is ${this.minimumDaysToLeaveGroup} days!`,
+      )
+    }
+
+    return this.update(id, { date })
+  }
+
+  private _isValidDateToLeaveCarpoolingGroup(
+    date: string,
+    requestCreatedAt = new Date(),
+  ): boolean {
+    const dayjsDate = Dayjs.utc(date).startOf('day')
+
+    return Dayjs(requestCreatedAt)
+      .startOf('day')
+      .add(this.minimumDaysToLeaveGroup, 'days')
+      .isBefore(dayjsDate)
   }
 }
