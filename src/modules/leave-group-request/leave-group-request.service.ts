@@ -6,8 +6,11 @@ import {
 import { ConfigService } from '@nestjs/config'
 import * as Dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
+import { formatSearchResult } from 'src/helpers/format-search-result'
+import { SearchDto } from 'src/helpers/search.dto'
 import { LeaveGroupRequestEntity } from 'src/typeorm/entities'
 import { TypeOrmService } from 'src/typeorm/typeorm.service'
+import { SearchResult } from 'src/types'
 import { BaseService } from '../base/base.service'
 import { UserService } from '../user/user.service'
 import { CreateLeaveGroupRequestDto } from './dto/create-leave-group-request.dto'
@@ -26,6 +29,41 @@ export class LeaveGroupRequestService extends BaseService<LeaveGroupRequestEntit
     super(typeOrmService.getRepository(LeaveGroupRequestEntity))
     this.minimumDaysToLeaveGroup = +config.get<number>(
       'MINIMUM_DAYS_TO_LEAVE_GROUP',
+    )
+  }
+
+  async getListRequests({
+    page,
+    limit,
+    sort,
+    order,
+  }: SearchDto): Promise<SearchResult<LeaveGroupRequestEntity>> {
+    const queryBuilder = this.getRepository()
+      .createQueryBuilder('request')
+      .leftJoinAndSelect('request.carpoolingGroup', 'carpoolingGroup')
+      .leftJoin('request.user', 'user')
+      .leftJoin('user.userProfile', 'userProfile')
+      .addSelect(['user.id', 'userProfile.firstName', 'userProfile.lastName'])
+      .where('request.isProcessed = :isProcessed', { isProcessed: false })
+
+    sort = sort.split('.').length > 1 ? sort : `request.${sort}`
+
+    queryBuilder
+      .orderBy(sort, order)
+      .skip((page - 1) * limit)
+      .take(limit)
+
+    const [records, total] = await queryBuilder.getManyAndCount()
+
+    return formatSearchResult(
+      records,
+      page,
+      limit,
+      null,
+      null,
+      sort,
+      order,
+      total,
     )
   }
 

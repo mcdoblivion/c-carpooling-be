@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Param,
   ParseIntPipe,
   Post,
@@ -8,8 +9,10 @@ import {
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { UserFromRequest } from 'src/helpers/get-user-from-request.decorator'
+import { SearchDto } from 'src/helpers/search.dto'
 import { LeaveGroupRequestEntity, UserEntity } from 'src/typeorm/entities'
 import { Role } from 'src/typeorm/enums'
+import { SearchResult } from 'src/types'
 import { Auth } from '../auth/decorators/auth.decorator'
 import { BaseController } from '../base/base.controller'
 import { CreateLeaveGroupRequestDto } from './dto/create-leave-group-request.dto'
@@ -24,6 +27,14 @@ export class LeaveGroupRequestController
   constructor(
     private readonly leaveGroupRequestService: LeaveGroupRequestService,
   ) {}
+
+  @Auth(Role.ADMIN)
+  @Get()
+  search(
+    @Body() searchDto: SearchDto,
+  ): Promise<SearchResult<LeaveGroupRequestEntity>> {
+    return this.leaveGroupRequestService.getListRequests(searchDto)
+  }
 
   @Auth(Role.NORMAL_USER)
   @Post()
