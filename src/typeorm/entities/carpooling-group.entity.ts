@@ -1,5 +1,9 @@
 import { Column, Entity, Index, JoinColumn, OneToMany, OneToOne } from 'typeorm'
-import { CarpoolingLogEntity, LeaveGroupRequestEntity } from '.'
+import {
+  CarpoolingLogEntity,
+  DayOffRequestEntity,
+  LeaveGroupRequestEntity,
+} from '.'
 import { BaseEntity } from './base.entity'
 import { UserEntity } from './user.entity'
 
@@ -36,6 +40,12 @@ export class CarpoolingGroupEntity extends BaseEntity {
     (request: LeaveGroupRequestEntity) => request.carpoolingGroup,
   )
   leaveGroupRequests: LeaveGroupRequestEntity[]
+
+  @OneToMany(
+    () => DayOffRequestEntity,
+    (request: DayOffRequestEntity) => request.carpoolingGroup,
+  )
+  dayOffRequests: DayOffRequestEntity[]
 
   @OneToMany(
     () => CarpoolingLogEntity,

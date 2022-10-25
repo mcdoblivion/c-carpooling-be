@@ -27,7 +27,7 @@ export class LeaveGroupRequestEntity extends BaseEntity {
   carpoolingGroupId: number
 
   @Column({ type: 'date' })
-  date: Date
+  date: string
 
   @Column({ type: 'boolean', default: false })
   isProcessed: boolean
