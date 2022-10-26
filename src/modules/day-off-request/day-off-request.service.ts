@@ -131,6 +131,22 @@ export class DayOffRequestService extends BaseService<DayOffRequestEntity> {
     return this.update(id, { date, directionType })
   }
 
+  async deleteDayOffRequest(id: number, userId: number) {
+    const existingRequest = await this.findOne({
+      id,
+      userId,
+      isProcessed: false,
+    })
+
+    if (!existingRequest) {
+      throw new NotFoundException(
+        `The request with ID ${id} does not exist or has already been processed!`,
+      )
+    }
+
+    return this.delete(id)
+  }
+
   private _isValidDayOffDate(date: string) {
     const dayjsDate = Dayjs.utc(date).startOf('day')
 

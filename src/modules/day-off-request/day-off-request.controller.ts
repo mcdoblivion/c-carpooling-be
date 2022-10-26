@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Param,
   ParseIntPipe,
   Post,
@@ -40,5 +41,14 @@ export class DayOffRequestController
     @UserFromRequest() user: UserEntity,
   ): Promise<DayOffRequestEntity> {
     return this.dayOffRequestService.updateDayOffRequest(id, updateDto, user.id)
+  }
+
+  @Auth(Role.NORMAL_USER)
+  @Delete(':id')
+  deleteOneById(
+    @Param('id', ParseIntPipe) id: number,
+    @UserFromRequest() user?: UserEntity,
+  ) {
+    return this.dayOffRequestService.deleteDayOffRequest(id, user.id)
   }
 }
