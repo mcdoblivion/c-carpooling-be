@@ -33,6 +33,7 @@ import { StripeController } from './webhooks/stripe.controller'
 import { AddressModule } from './modules/address/address.module'
 import { CarpoolingPaymentModule } from './modules/carpooling-payment/carpooling-payment.module'
 import { LeaveGroupRequestModule } from './modules/leave-group-request/leave-group-request.module'
+import { DayOffRequestModule } from './modules/day-off-request/day-off-request.module'
 
 const config = new ConfigService()
 
@@ -81,6 +82,7 @@ const config = new ConfigService()
     AddressModule,
     CarpoolingPaymentModule,
     LeaveGroupRequestModule,
+    DayOffRequestModule,
   ],
   controllers: [AppController, StripeController],
   providers: [],

@@ -11,6 +11,7 @@ import { SearchDto } from 'src/helpers/search.dto'
 import { LeaveGroupRequestEntity } from 'src/typeorm/entities'
 import { TypeOrmService } from 'src/typeorm/typeorm.service'
 import { SearchResult } from 'src/types'
+import { DeleteResult } from 'typeorm'
 import { BaseService } from '../base/base.service'
 import { UserService } from '../user/user.service'
 import { CreateLeaveGroupRequestDto } from './dto/create-leave-group-request.dto'
@@ -123,6 +124,25 @@ export class LeaveGroupRequestService extends BaseService<LeaveGroupRequestEntit
     }
 
     return this.update(id, { date })
+  }
+
+  async deleteLeaveGroupRequest(
+    id: number,
+    userId: number,
+  ): Promise<DeleteResult> {
+    const existingRequest = await this.findOne({
+      id,
+      userId,
+      isProcessed: false,
+    })
+
+    if (!existingRequest) {
+      throw new NotFoundException(
+        `The request with ID ${id} does not exist or has already been processed!`,
+      )
+    }
+
+    return this.delete(id)
   }
 
   private _isValidDateToLeaveCarpoolingGroup(
