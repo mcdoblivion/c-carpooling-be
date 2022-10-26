@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -13,6 +14,7 @@ import { SearchDto } from 'src/helpers/search.dto'
 import { LeaveGroupRequestEntity, UserEntity } from 'src/typeorm/entities'
 import { Role } from 'src/typeorm/enums'
 import { SearchResult } from 'src/types'
+import { DeleteResult } from 'typeorm'
 import { Auth } from '../auth/decorators/auth.decorator'
 import { BaseController } from '../base/base.controller'
 import { CreateLeaveGroupRequestDto } from './dto/create-leave-group-request.dto'
@@ -60,5 +62,14 @@ export class LeaveGroupRequestController
       updateDto,
       user.id,
     )
+  }
+
+  @Auth(Role.NORMAL_USER)
+  @Delete(':id')
+  deleteOneById(
+    @Param('id', ParseIntPipe) id: number,
+    @UserFromRequest() user: UserEntity,
+  ): Promise<DeleteResult> {
+    return this.leaveGroupRequestService.deleteLeaveGroupRequest(id, user.id)
   }
 }
