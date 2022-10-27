@@ -36,6 +36,7 @@ export class LeaveGroupRequestService extends BaseService<LeaveGroupRequestEntit
   async getListRequests({
     page,
     limit,
+    filters,
     sort,
     order,
   }: SearchDto): Promise<SearchResult<LeaveGroupRequestEntity>> {
@@ -46,6 +47,21 @@ export class LeaveGroupRequestService extends BaseService<LeaveGroupRequestEntit
       .leftJoin('user.userProfile', 'userProfile')
       .addSelect(['user.id', 'userProfile.firstName', 'userProfile.lastName'])
       .where('request.isProcessed = :isProcessed', { isProcessed: false })
+
+    const { userId, carpoolingGroupId } = filters as {
+      userId: number
+      carpoolingGroupId: number
+    }
+
+    if (userId) {
+      queryBuilder.andWhere('request.userId = :userId', { userId })
+    }
+
+    if (carpoolingGroupId) {
+      queryBuilder.andWhere('request.carpoolingGroupId = :carpoolingGroupId', {
+        carpoolingGroupId,
+      })
+    }
 
     sort = sort.split('.').length > 1 ? sort : `request.${sort}`
 
@@ -61,7 +77,7 @@ export class LeaveGroupRequestService extends BaseService<LeaveGroupRequestEntit
       page,
       limit,
       null,
-      null,
+      filters,
       sort,
       order,
       total,

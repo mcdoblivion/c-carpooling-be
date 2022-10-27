@@ -40,6 +40,14 @@ export class CarpoolingGroupController
     )
   }
 
+  @Auth()
+  @Get(':id')
+  getOneById(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<CarpoolingGroupEntity> {
+    return this.carpoolingGroupService.getCarpoolingGroupDetails(id)
+  }
+
   @Post()
   create(
     @Body() createDto: CreateCarpoolingGroupDto,

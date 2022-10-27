@@ -192,6 +192,50 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
     }
   }
 
+  async getCarpoolingGroupDetails(id: number): Promise<CarpoolingGroupEntity> {
+    const queryBuilder = this.getRepository()
+      .createQueryBuilder('carpoolingGroup')
+      .leftJoin('carpoolingGroup.driverUser', 'driverUser')
+      .leftJoin('driverUser.userProfile', 'driverUserProfile')
+      .leftJoin('driverUser.driver', 'driver')
+      .leftJoin('driver.vehicleForCarpooling', 'vehicleForCarpooling')
+      .leftJoinAndSelect('driverUser.addresses', 'driverAddresses')
+      .leftJoin('carpoolingGroup.carpoolers', 'carpoolerUser')
+      .leftJoin('carpoolerUser.userProfile', 'carpoolerUserProfile')
+      .addSelect([
+        'driverUser.id',
+        'driverUser.email',
+        'driverUser.phoneNumber',
+        'driverUserProfile.firstName',
+        'driverUserProfile.lastName',
+        'driverUserProfile.avatarURL',
+        'driver.id',
+        'vehicleForCarpooling.licensePlate',
+        'vehicleForCarpooling.numberOfSeats',
+        'vehicleForCarpooling.brand',
+        'vehicleForCarpooling.color',
+        'vehicleForCarpooling.photoURL',
+        'carpoolerUser.id',
+        'carpoolerUser.email',
+        'carpoolerUser.phoneNumber',
+        'carpoolerUserProfile.firstName',
+        'carpoolerUserProfile.lastName',
+        'carpoolerUserProfile.avatarURL',
+      ])
+      .where('carpoolingGroup.id = :id', { id })
+      .andWhere('carpoolingGroup.deletedAt IS NULL')
+
+    const carpoolingGroup = await queryBuilder.getOne()
+
+    if (!carpoolingGroup) {
+      throw new NotFoundException(
+        `Carpooling group with ID ${id} does not exist!`,
+      )
+    }
+
+    return carpoolingGroup
+  }
+
   async createCarpoolingGroup(
     { departureTime, comebackTime, ...rest }: CreateCarpoolingGroupDto,
     driverUserId: number,

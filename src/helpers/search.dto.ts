@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer'
-import { IsIn, IsInt, IsOptional, IsString } from 'class-validator'
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
 export class SearchDto {
   @Transform((transformFunctionParams) =>
@@ -27,6 +27,7 @@ export class SearchDto {
   filters?: Record<string, any> = {}
 
   @IsString()
+  @IsNotEmpty()
   @IsOptional()
   sort?: string = 'updatedAt'
 
