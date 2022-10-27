@@ -6,8 +6,12 @@ import {
 import { ConfigService } from '@nestjs/config'
 import * as Dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
+import { formatSearchResult } from 'src/helpers/format-search-result'
+import { SearchDto } from 'src/helpers/search.dto'
 import { DayOffRequestEntity } from 'src/typeorm/entities'
+import { DirectionType } from 'src/typeorm/enums'
 import { TypeOrmService } from 'src/typeorm/typeorm.service'
+import { SearchResult } from 'src/types'
 import { Not } from 'typeorm'
 import { BaseService } from '../base/base.service'
 import { UserService } from '../user/user.service'
@@ -27,6 +31,64 @@ export class DayOffRequestService extends BaseService<DayOffRequestEntity> {
     super(typeOrmService.getRepository(DayOffRequestEntity))
     this.MAXIMUM_DAYS_OFF_IN_MONTH = +config.get<number>(
       'MAXIMUM_DAYS_OFF_IN_MONTH',
+    )
+  }
+
+  async searchDayOffRequest({
+    page,
+    limit,
+    filters,
+    sort,
+    order,
+  }: SearchDto): Promise<SearchResult<DayOffRequestEntity>> {
+    const queryBuilder = this.getRepository()
+      .createQueryBuilder('request')
+      .leftJoinAndSelect('request.carpoolingGroup', 'carpoolingGroup')
+      .leftJoin('request.user', 'user')
+      .leftJoin('user.userProfile', 'userProfile')
+      .addSelect(['user.id', 'userProfile.firstName', 'userProfile.lastName'])
+      .where('request.isProcessed = :isProcessed', { isProcessed: false })
+
+    const { userId, carpoolingGroupId, directionType } = filters as {
+      userId: number
+      carpoolingGroupId: number
+      directionType: DirectionType
+    }
+
+    if (userId) {
+      queryBuilder.andWhere('request.userId = :userId', { userId })
+    }
+
+    if (carpoolingGroupId) {
+      queryBuilder.andWhere('request.carpoolingGroupId = :carpoolingGroupId', {
+        carpoolingGroupId,
+      })
+    }
+
+    if (directionType) {
+      queryBuilder.andWhere('request.directionType = :directionType', {
+        directionType,
+      })
+    }
+
+    sort = sort.split('.').length > 1 ? sort : `request.${sort}`
+
+    queryBuilder
+      .orderBy(sort, order)
+      .skip((page - 1) * limit)
+      .take(limit)
+
+    const [records, total] = await queryBuilder.getManyAndCount()
+
+    return formatSearchResult(
+      records,
+      page,
+      limit,
+      null,
+      filters,
+      sort,
+      order,
+      total,
     )
   }
 

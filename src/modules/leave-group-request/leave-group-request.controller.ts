@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   ParseIntPipe,
@@ -30,11 +31,20 @@ export class LeaveGroupRequestController
     private readonly leaveGroupRequestService: LeaveGroupRequestService,
   ) {}
 
-  @Auth(Role.ADMIN)
+  @Auth()
   @Get()
   search(
     @Body() searchDto: SearchDto,
+    @UserFromRequest() user: UserEntity,
   ): Promise<SearchResult<LeaveGroupRequestEntity>> {
+    const role = user.role
+
+    if (role === Role.NORMAL_USER) {
+      searchDto.filters = { userId: user.id }
+    } else if (role !== Role.ADMIN) {
+      throw new ForbiddenException()
+    }
+
     return this.leaveGroupRequestService.getListRequests(searchDto)
   }
 

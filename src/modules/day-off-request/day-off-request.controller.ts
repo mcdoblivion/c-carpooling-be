@@ -2,15 +2,20 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
+  Get,
   Param,
   ParseIntPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { UserFromRequest } from 'src/helpers/get-user-from-request.decorator'
+import { SearchDto } from 'src/helpers/search.dto'
 import { DayOffRequestEntity, UserEntity } from 'src/typeorm/entities'
 import { Role } from 'src/typeorm/enums'
+import { SearchResult } from 'src/types'
 import { Auth } from '../auth/decorators/auth.decorator'
 import { BaseController } from '../base/base.controller'
 import { DayOffRequestService } from './day-off-request.service'
@@ -23,6 +28,23 @@ export class DayOffRequestController
   implements BaseController<DayOffRequestEntity>
 {
   constructor(private readonly dayOffRequestService: DayOffRequestService) {}
+
+  @Auth()
+  @Get()
+  search(
+    @Query() searchDto: SearchDto,
+    @UserFromRequest() user: UserEntity,
+  ): Promise<SearchResult<DayOffRequestEntity>> {
+    const role = user.role
+
+    if (role === Role.NORMAL_USER) {
+      searchDto.filters = { userId: user.id }
+    } else if (role !== Role.ADMIN) {
+      throw new ForbiddenException()
+    }
+
+    return this.dayOffRequestService.searchDayOffRequest(searchDto)
+  }
 
   @Auth(Role.NORMAL_USER)
   @Post()
