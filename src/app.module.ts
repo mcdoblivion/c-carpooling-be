@@ -7,6 +7,7 @@ import {
   NestModule,
 } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
+import { ScheduleModule } from '@nestjs/schedule'
 import {
   utilities as nestWinstonModuleUtilities,
   WinstonModule,
@@ -14,10 +15,16 @@ import {
 } from 'nest-winston'
 import * as winston from 'winston'
 import { AppController } from './app.controller'
+import { LeaveGroupRequestModule as LeaveGroupRequestTask } from './cron-jobs/process-leave-group-request/leave-group-request.module'
 import { HttpLoggerMiddleware } from './helpers/http-logger.middleware'
+import { AddressModule } from './modules/address/address.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { CarpoolingGroupModule } from './modules/carpooling-group/carpooling-group.module'
+import { CarpoolingPaymentModule } from './modules/carpooling-payment/carpooling-payment.module'
+import { CronJobModule } from './modules/cron-job/cron-job.module'
+import { DayOffRequestModule } from './modules/day-off-request/day-off-request.module'
 import { DriverModule } from './modules/driver/driver.module'
+import { LeaveGroupRequestModule } from './modules/leave-group-request/leave-group-request.module'
 import { PaymentMethodModule } from './modules/payment-method/payment-method.module'
 import { UserModule } from './modules/user/user.module'
 import { VehicleModule } from './modules/vehicle/vehicle.module'
@@ -30,15 +37,13 @@ import { StripeModule } from './services/stripe/stripe.module'
 import { TypeOrmModule } from './typeorm/typeorm.module'
 import { TypeOrmService } from './typeorm/typeorm.service'
 import { StripeController } from './webhooks/stripe.controller'
-import { AddressModule } from './modules/address/address.module'
-import { CarpoolingPaymentModule } from './modules/carpooling-payment/carpooling-payment.module'
-import { LeaveGroupRequestModule } from './modules/leave-group-request/leave-group-request.module'
-import { DayOffRequestModule } from './modules/day-off-request/day-off-request.module'
 
 const config = new ConfigService()
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
+    LeaveGroupRequestTask,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -83,6 +88,7 @@ const config = new ConfigService()
     CarpoolingPaymentModule,
     LeaveGroupRequestModule,
     DayOffRequestModule,
+    CronJobModule,
   ],
   controllers: [AppController, StripeController],
   providers: [],

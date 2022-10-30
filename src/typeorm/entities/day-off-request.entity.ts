@@ -8,6 +8,7 @@ import { UserEntity } from './user.entity'
 @Index(['userId', 'carpoolingGroupId', 'date', 'directionType'], {
   unique: true,
 })
+@Index(['date', 'isProcessed'])
 export class DayOffRequestEntity extends BaseEntity {
   @ManyToOne(() => UserEntity, (user: UserEntity) => user.dayOffRequests, {
     cascade: true,

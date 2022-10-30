@@ -1,9 +1,10 @@
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm'
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm'
 import { CarpoolingGroupEntity } from '.'
 import { BaseEntity } from './base.entity'
 import { UserEntity } from './user.entity'
 
 @Entity({ name: 'leave_group_requests' })
+@Index(['date', 'isProcessed'])
 export class LeaveGroupRequestEntity extends BaseEntity {
   @ManyToOne(() => UserEntity, (user: UserEntity) => user.leaveGroupRequests, {
     cascade: true,
