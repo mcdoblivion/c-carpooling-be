@@ -7,5 +7,6 @@ import { LeaveGroupRequestService } from './leave-group-request.service'
   imports: [UserModule],
   controllers: [LeaveGroupRequestController],
   providers: [LeaveGroupRequestService],
+  exports: [LeaveGroupRequestService],
 })
 export class LeaveGroupRequestModule {}
