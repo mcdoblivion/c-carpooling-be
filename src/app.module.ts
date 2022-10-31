@@ -30,7 +30,7 @@ import { UserModule } from './modules/user/user.module'
 import { VehicleModule } from './modules/vehicle/vehicle.module'
 import { WalletTransactionModule } from './modules/wallet-transaction/wallet-transaction.module'
 import { WalletModule } from './modules/wallet/wallet.module'
-import { S3Module } from './services/aws/s3.module'
+import { CloudinaryModule } from './services/cloudinary/cloudinary.module'
 import { MailModule } from './services/mail/mail.module'
 import { SmsModule } from './services/sms/sms.module'
 import { StripeModule } from './services/stripe/stripe.module'
@@ -72,7 +72,7 @@ const config = new ConfigService()
       isGlobal: true,
     }),
     TypeOrmModule,
-    S3Module,
+    CloudinaryModule,
     MailModule,
     SmsModule,
     StripeModule,

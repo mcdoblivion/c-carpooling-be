@@ -1,5 +1,4 @@
 import { forwardRef, Module } from '@nestjs/common'
-import { S3Module } from 'src/services/aws/s3.module'
 import { AddressModule } from '../address/address.module'
 import { AuthModule } from '../auth/auth.module'
 import { PaymentMethodModule } from '../payment-method/payment-method.module'
@@ -11,7 +10,6 @@ import { UserService } from './user.service'
 
 @Module({
   imports: [
-    S3Module,
     PaymentMethodModule,
     WalletModule,
     WalletTransactionModule,
