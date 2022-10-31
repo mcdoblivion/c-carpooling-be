@@ -15,7 +15,6 @@ import { Cache } from 'cache-manager'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
 import { formatSearchResult } from 'src/helpers/format-search-result'
 import { SearchDto } from 'src/helpers/search.dto'
-import { S3Service } from 'src/services/aws/s3.service'
 import { MailService } from 'src/services/mail/mail.service'
 import { SmsService } from 'src/services/sms/sms.service'
 import { StripeService } from 'src/services/stripe/stripe.service'
@@ -56,7 +55,6 @@ export class UserService extends BaseService<UserEntity> {
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
     private readonly config: ConfigService,
-    private readonly s3Service: S3Service,
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,
     private readonly mailsService: MailService,

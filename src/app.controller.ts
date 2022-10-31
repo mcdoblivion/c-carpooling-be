@@ -1,29 +1,23 @@
 import {
-  BadRequestException,
-  Body,
   Controller,
   Get,
   Inject,
   LoggerService,
   Post,
-  Query,
-  UploadedFiles,
+  UploadedFile,
   UseInterceptors,
 } from '@nestjs/common'
-import { AnyFilesInterceptor } from '@nestjs/platform-express'
-import { ApiTags } from '@nestjs/swagger'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
-import * as sharp from 'sharp'
-import { v4 as uuid } from 'uuid'
-import { CropImageDto } from './helpers/crop-image.dto'
 import { Auth } from './modules/auth/decorators/auth.decorator'
-import { S3Service } from './services/aws/s3.service'
+import { CloudinaryService } from './services/cloudinary/cloudinary.service'
 
 @ApiTags('Utilities')
 @Controller()
 export class AppController {
   constructor(
-    private readonly s3Service: S3Service,
+    private readonly cloudinaryService: CloudinaryService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {}
@@ -33,77 +27,28 @@ export class AppController {
   }
 
   @Auth()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'file',
+        },
+      },
+    },
+  })
   @Post('upload-file')
-  @UseInterceptors(AnyFilesInterceptor())
-  async uploadFile(@UploadedFiles() files: Array<Express.Multer.File>) {
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<{ fileUrl: string }> {
     try {
-      const { originalname, buffer, mimetype } = files?.[0]
+      const { originalname, buffer, mimetype } = file
 
-      return await this.s3Service.uploadFile(
-        `${uuid()}/${originalname}`,
-        buffer,
-        mimetype,
-        true,
-      )
+      return this.cloudinaryService.uploadFile(buffer, mimetype, originalname)
     } catch (error) {
-      this.logger.error('Error when uploading files!')
-      throw error
-    }
-  }
-
-  @Post('upload-image')
-  @UseInterceptors(AnyFilesInterceptor())
-  async uploadImage(
-    @UploadedFiles() files: Array<Express.Multer.File>,
-    @Body() cropImageDto: CropImageDto,
-  ) {
-    try {
-      const file = files?.[0]
-      if (!file) {
-        throw new BadRequestException('File is required!')
-      }
-
-      const { mimetype, originalname } = file
-      if (!['image/png', 'image/jpeg'].includes(mimetype)) {
-        throw new BadRequestException('Only png/jpeg files are allowed!')
-      }
-
-      const { x, y, width, height } = cropImageDto
-      let buffer = file.buffer
-      if (
-        typeof x === 'number' &&
-        typeof y === 'number' &&
-        typeof width === 'number' &&
-        typeof height === 'number'
-      ) {
-        buffer = await sharp(buffer)
-          .extract({ width, height, top: y, left: x })
-          .toBuffer()
-      }
-
-      const { filePath } = await this.s3Service.uploadFile(
-        `${uuid()}/${originalname}`,
-        buffer,
-        mimetype,
-        true,
-      )
-
-      const { fileUrl } = await this.s3Service.getFileUrl(filePath)
-
-      return { filePath, fileUrl }
-    } catch (error) {
-      this.logger.error('Error when uploading image!')
-      throw error
-    }
-  }
-
-  @Auth()
-  @Get('file-url')
-  async getFileUrl(@Query() { filePath }) {
-    try {
-      return await this.s3Service.getFileUrl(filePath)
-    } catch (error) {
-      this.logger.error('Error when getting file URL!')
+      this.logger.error('Error when uploading file!')
       throw error
     }
   }
