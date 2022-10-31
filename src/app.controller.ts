@@ -46,7 +46,11 @@ export class AppController {
     try {
       const { originalname, buffer, mimetype } = file
 
-      return this.cloudinaryService.uploadFile(buffer, mimetype, originalname)
+      return await this.cloudinaryService.uploadFile(
+        buffer,
+        mimetype,
+        originalname,
+      )
     } catch (error) {
       this.logger.error('Error when uploading file!')
       throw error
