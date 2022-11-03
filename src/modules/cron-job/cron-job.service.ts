@@ -5,6 +5,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
+import { LeaveGroupRequestService as LeaveGroupCronJob } from 'src/cron-jobs/process-leave-group-request/leave-group-request.service'
+import { UpdateCarpoolingLogService } from 'src/cron-jobs/update-carpooling-log/update-carpooling-log.service'
 import { formatSearchResult } from 'src/helpers/format-search-result'
 import { SearchDto } from 'src/helpers/search.dto'
 import { CronJobEntity } from 'src/typeorm/entities'
@@ -13,7 +15,6 @@ import { TypeOrmService } from 'src/typeorm/typeorm.service'
 import { SearchResult } from 'src/types'
 import { Brackets } from 'typeorm'
 import { BaseService } from '../base/base.service'
-import { LeaveGroupRequestService as LeaveGroupCronJob } from 'src/cron-jobs/process-leave-group-request/leave-group-request.service'
 
 @Injectable()
 export class CronJobService extends BaseService<CronJobEntity> {
@@ -21,6 +22,8 @@ export class CronJobService extends BaseService<CronJobEntity> {
     private readonly typeOrmService: TypeOrmService,
     @Inject(forwardRef(() => LeaveGroupCronJob))
     private readonly leaveGroupCronJob: LeaveGroupCronJob,
+    @Inject(forwardRef(() => UpdateCarpoolingLogService))
+    private readonly updateCarpoolingLogCronJob: UpdateCarpoolingLogService,
   ) {
     super(typeOrmService.getRepository(CronJobEntity))
   }
@@ -101,8 +104,8 @@ export class CronJobService extends BaseService<CronJobEntity> {
 
     if (type === CronJobType.LEAVE_GROUP_REQUEST) {
       this.leaveGroupCronJob.processLeaveGroupRequests(id)
-    } else if (type === CronJobType.DAY_OFF_REQUEST) {
-      // TODO: handle this
+    } else if (type === CronJobType.CARPOOLING_LOG) {
+      this.updateCarpoolingLogCronJob.updateCarpoolingLogs(id)
     } else {
       throw new Error('This method is not supported!')
     }

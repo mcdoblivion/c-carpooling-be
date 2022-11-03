@@ -154,12 +154,12 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
           (address) => address.type === AddressType.WORK,
         )
 
-        const homeDistance = this._getDistance(
+        const homeDistance = this.getDistance(
           homeAddress,
           userHomeAddress,
           'meters',
         )
-        const workDistance = this._getDistance(
+        const workDistance = this.getDistance(
           workAddress,
           userWorkAddress,
           'meters',
@@ -367,8 +367,8 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
       )
     }
 
-    const fuelPrice = this._getCurrentFuelPrice(fuelType)
-    const carpoolingDistanceInKms = this._getDistance(
+    const fuelPrice = this.getCurrentFuelPrice(fuelType)
+    const carpoolingDistanceInKms = this.getDistance(
       addresses[0],
       addresses[1],
       'kilometers',
@@ -394,7 +394,7 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
     )
 
     const remainingBusinessDaysInMonth =
-      this._countRemainingBusinessDaysInMonth()
+      this.countRemainingBusinessDaysInMonth()
 
     const priceForCurrentMonth =
       pricePerUserPerMoveTurn * remainingBusinessDaysInMonth * 2
@@ -583,7 +583,7 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
     }
   }
 
-  private _countRemainingBusinessDaysInMonth() {
+  countRemainingBusinessDaysInMonth() {
     let currentDate = Dayjs()
     let count = 0
 
@@ -600,7 +600,7 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
     return count
   }
 
-  private _getCurrentFuelPrice(fuelType: FuelType) {
+  getCurrentFuelPrice(fuelType: FuelType) {
     if (fuelType === FuelType.DIESEL) {
       return 20000
     } else if (fuelType === FuelType.GASOLINE) {
@@ -610,11 +610,7 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
     return 25000
   }
 
-  private _getDistance(
-    address1: AddressEntity,
-    address2: AddressEntity,
-    units: Units,
-  ) {
+  getDistance(address1: AddressEntity, address2: AddressEntity, units: Units) {
     const { latitude: latitude1, longitude: longitude1 } = address1
     const { latitude: latitude2, longitude: longitude2 } = address2
 

@@ -38,4 +38,7 @@ export class CarpoolingLogEntity extends BaseEntity {
 
   @Column({ type: 'boolean' })
   isAbsent: boolean
+
+  @Column()
+  carpoolingFee: number
 }
