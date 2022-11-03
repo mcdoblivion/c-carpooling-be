@@ -1,5 +1,7 @@
 import { forwardRef, Inject, Injectable, LoggerService } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
+import * as Dayjs from 'dayjs'
+import * as utc from 'dayjs/plugin/utc'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
 import { CronJobService } from 'src/modules/cron-job/cron-job.service'
 import { LeaveGroupRequestService as TypeOrmLeaveGroupRequestService } from 'src/modules/leave-group-request/leave-group-request.service'
@@ -12,6 +14,7 @@ import {
 import { CronJobType } from 'src/typeorm/enums/cron-job-type'
 import { TypeOrmService } from 'src/typeorm/typeorm.service'
 import { In } from 'typeorm'
+Dayjs.extend(utc)
 
 @Injectable()
 export class LeaveGroupRequestService {
@@ -26,10 +29,11 @@ export class LeaveGroupRequestService {
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, {
     name: 'leave-group-requests',
+    utcOffset: '+7',
   })
   async processLeaveGroupRequests(cronJobId: number) {
     let cronJob: CronJobEntity
-    const date = new Date().toISOString().split('T')[0]
+    const date = Dayjs().utcOffset(7).toISOString().split('T')[0]
 
     try {
       if (cronJobId) {
@@ -74,6 +78,7 @@ export class LeaveGroupRequestService {
       this.logger.error(
         `Failed to process the requests to leave carpooling group on ${date}!`,
       )
+      this.logger.error(error)
     }
   }
 
