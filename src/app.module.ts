@@ -38,6 +38,7 @@ import { StripeModule } from './services/stripe/stripe.module'
 import { TypeOrmModule } from './typeorm/typeorm.module'
 import { TypeOrmService } from './typeorm/typeorm.service'
 import { StripeController } from './webhooks/stripe.controller'
+import { CarpoolingLogModule } from './modules/carpooling-log/carpooling-log.module'
 
 const config = new ConfigService()
 
@@ -91,6 +92,7 @@ const config = new ConfigService()
     LeaveGroupRequestModule,
     DayOffRequestModule,
     CronJobModule,
+    CarpoolingLogModule,
   ],
   controllers: [AppController, StripeController],
   providers: [],
