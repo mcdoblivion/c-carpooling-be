@@ -71,7 +71,7 @@ export class DriverService extends BaseService<DriverEntity> {
 
     const [records, total] = await queryBuilder.getManyAndCount()
 
-    return formatSearchResult(
+    return formatSearchResult({
       records,
       page,
       limit,
@@ -80,7 +80,7 @@ export class DriverService extends BaseService<DriverEntity> {
       sort,
       order,
       total,
-    )
+    })
   }
 
   async registerToBecomeDriver(

@@ -75,7 +75,7 @@ export class CronJobService extends BaseService<CronJobEntity> {
 
     const [records, total] = await queryBuilder.getManyAndCount()
 
-    return formatSearchResult(
+    return formatSearchResult({
       records,
       page,
       limit,
@@ -84,7 +84,7 @@ export class CronJobService extends BaseService<CronJobEntity> {
       sort,
       order,
       total,
-    )
+    })
   }
 
   async triggerCronJobById(id: number) {

@@ -138,7 +138,7 @@ export class UserService extends BaseService<UserEntity> {
 
     const [records, total] = await queryBuilder.getManyAndCount()
 
-    return formatSearchResult(
+    return formatSearchResult({
       records,
       page,
       limit,
@@ -147,7 +147,7 @@ export class UserService extends BaseService<UserEntity> {
       sort,
       order,
       total,
-    )
+    })
   }
 
   async getUserDetails(id: number): Promise<UserEntity> {

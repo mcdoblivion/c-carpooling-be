@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { UserFromRequest } from 'src/helpers/get-user-from-request.decorator'
@@ -34,7 +35,7 @@ export class LeaveGroupRequestController
   @Auth()
   @Get()
   search(
-    @Body() searchDto: SearchDto,
+    @Query() searchDto: SearchDto,
     @UserFromRequest() user: UserEntity,
   ): Promise<SearchResult<LeaveGroupRequestEntity>> {
     const role = user.role

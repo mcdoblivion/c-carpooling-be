@@ -71,15 +71,15 @@ export class CarpoolingLogService extends BaseService<CarpoolingLogEntity> {
 
     const [records, total] = await queryBuilder.getManyAndCount()
 
-    return formatSearchResult(
+    return formatSearchResult({
       records,
       page,
       limit,
-      null,
+      search: null,
       filters,
       sort,
       order,
       total,
-    )
+    })
   }
 }
