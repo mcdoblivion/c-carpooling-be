@@ -76,16 +76,16 @@ export class VehicleService extends BaseService<VehicleEntity> {
 
     const [records, total] = await queryBuilder.getManyAndCount()
 
-    return formatSearchResult(
+    return formatSearchResult({
       records,
-      total,
+      page,
       limit,
       search,
       filters,
       sort,
       order,
       total,
-    )
+    })
   }
 
   async verifyVehicle(id: number): Promise<VehicleEntity> {

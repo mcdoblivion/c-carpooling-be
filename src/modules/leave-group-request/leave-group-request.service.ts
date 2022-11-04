@@ -72,16 +72,16 @@ export class LeaveGroupRequestService extends BaseService<LeaveGroupRequestEntit
 
     const [records, total] = await queryBuilder.getManyAndCount()
 
-    return formatSearchResult(
+    return formatSearchResult({
       records,
       page,
       limit,
-      null,
+      search: null,
       filters,
       sort,
       order,
       total,
-    )
+    })
   }
 
   async createLeaveGroupRequest(

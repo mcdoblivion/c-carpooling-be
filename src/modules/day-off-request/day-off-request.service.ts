@@ -80,16 +80,16 @@ export class DayOffRequestService extends BaseService<DayOffRequestEntity> {
 
     const [records, total] = await queryBuilder.getManyAndCount()
 
-    return formatSearchResult(
+    return formatSearchResult({
       records,
       page,
       limit,
-      null,
+      search: null,
       filters,
       sort,
       order,
       total,
-    )
+    })
   }
 
   async createDayOffRequest(
