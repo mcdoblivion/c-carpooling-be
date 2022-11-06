@@ -34,7 +34,7 @@ export class CarpoolingGroupController
     @Query() findCarpoolingGroupDto: FindCarpoolingGroupDto,
     @UserFromRequest() user: UserEntity,
   ) {
-    return this.carpoolingGroupService.findCarpoolingGroupDto(
+    return this.carpoolingGroupService.findCarpoolingGroups(
       findCarpoolingGroupDto,
       user.id,
     )

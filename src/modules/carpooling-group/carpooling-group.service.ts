@@ -43,7 +43,7 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
     super(typeOrmService.getRepository(CarpoolingGroupEntity))
   }
 
-  async findCarpoolingGroupDto(
+  async findCarpoolingGroups(
     { departureTime, comebackTime }: FindCarpoolingGroupDto,
     userId: number,
   ) {
