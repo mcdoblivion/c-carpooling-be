@@ -23,6 +23,7 @@ import { UpdateVehicleDto } from '../vehicle/dto/update-vehicle.dto'
 import { DriverService } from './driver.service'
 import { CreateDriverDto } from './dto/create-driver.dto'
 import { UpdateDriverDto } from './dto/update-driver.dto'
+import { UpdateMainVehicleDto } from './dto/update-main-vehicle.dto'
 
 @ApiTags('Driver')
 @Auth()
@@ -67,7 +68,7 @@ export class DriverController implements BaseController<DriverEntity> {
   @Put(':id/main-vehicle')
   async changeVehicleForCarpooling(
     @Param('id', ParseIntPipe) id: number,
-    @Body('vehicleId', ParseIntPipe) vehicleId: number,
+    @Body() updateMainVehicleDto: UpdateMainVehicleDto,
     @UserFromRequest() user: UserEntity,
   ) {
     if (!(await this.driverService.isValidDriver(id, user.id))) {
@@ -76,7 +77,11 @@ export class DriverController implements BaseController<DriverEntity> {
       )
     }
 
-    return this.driverService.changeVehicleForCarpooling(id, user.id, vehicleId)
+    return this.driverService.changeVehicleForCarpooling(
+      id,
+      user.id,
+      updateMainVehicleDto.vehicleId,
+    )
   }
 
   @Auth(Role.NORMAL_USER)
