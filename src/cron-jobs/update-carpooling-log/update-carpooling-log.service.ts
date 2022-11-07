@@ -4,6 +4,7 @@ import { Cron, CronExpression } from '@nestjs/schedule'
 import * as Dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
+import { DayjsWeekDay } from 'src/constants/week-day'
 import { CarpoolingGroupService } from 'src/modules/carpooling-group/carpooling-group.service'
 import { CronJobService } from 'src/modules/cron-job/cron-job.service'
 import { UserService } from 'src/modules/user/user.service'
@@ -38,7 +39,7 @@ export class UpdateCarpoolingLogService {
   })
   async updateCarpoolingLogs(cronJobId: number) {
     const dayjsDate = Dayjs().utcOffset(7).subtract(1, 'days')
-    const dateString = dayjsDate.toISOString().split('T')[0]
+    const dateString = dayjsDate.format('YYYY-MM-DD')
 
     let cronJob: CronJobEntity
 
@@ -51,7 +52,10 @@ export class UpdateCarpoolingLogService {
           return
         }
       } else {
-        if (dayjsDate.day() !== 0 && dayjsDate.day() !== 6) {
+        if (
+          dayjsDate.day() !== DayjsWeekDay.SATURDAY &&
+          dayjsDate.day() !== DayjsWeekDay.SUNDAY
+        ) {
           cronJob = await this.cronJobService.create({
             name: 'carpooling-logs',
             description: 'Update carpooling logs',

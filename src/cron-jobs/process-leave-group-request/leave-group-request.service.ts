@@ -33,7 +33,7 @@ export class LeaveGroupRequestService {
   })
   async processLeaveGroupRequests(cronJobId: number) {
     let cronJob: CronJobEntity
-    const date = Dayjs().utcOffset(7).toISOString().split('T')[0]
+    const date = Dayjs().utcOffset(7).format('YYYY-MM-DD')
 
     try {
       if (cronJobId) {

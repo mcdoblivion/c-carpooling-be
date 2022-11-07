@@ -9,6 +9,7 @@ import getDistance from '@turf/distance'
 import { point, Units } from '@turf/helpers'
 import * as Dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
+import { DayjsWeekDay } from 'src/constants/week-day'
 import {
   AddressEntity,
   CarpoolingGroupEntity,
@@ -590,7 +591,10 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
     const firstDayOfNextMonth = currentDate.add(1, 'months').startOf('month')
 
     while (firstDayOfNextMonth.diff(currentDate) > 0) {
-      if (currentDate.day() !== 0 && currentDate.day() !== 6) {
+      if (
+        currentDate.day() !== DayjsWeekDay.SATURDAY &&
+        currentDate.day() !== DayjsWeekDay.SUNDAY
+      ) {
         ++count
       }
 
