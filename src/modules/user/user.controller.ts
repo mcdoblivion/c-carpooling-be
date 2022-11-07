@@ -63,6 +63,7 @@ export class UserController implements BaseController<UserEntity> {
     return this.usersService.findAll({})
   }
 
+  @AuthWithoutCompletedProfile()
   @Get('me')
   getMe(@UserFromRequest() user: UserEntity): Promise<UserEntity> {
     return this.usersService.getUserDetails(user.id)

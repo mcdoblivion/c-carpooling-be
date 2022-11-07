@@ -21,7 +21,7 @@ export class CompletedProfileGuard implements CanActivate {
       context.getHandler(),
     )
 
-    if (!requireCompletedProfile) {
+    if (requireCompletedProfile === false) {
       return true
     }
 
