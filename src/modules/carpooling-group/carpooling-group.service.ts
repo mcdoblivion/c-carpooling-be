@@ -10,6 +10,8 @@ import { point, Units } from '@turf/helpers'
 import * as Dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import { DayjsWeekDay } from 'src/constants/week-day'
+import { formatSearchResult } from 'src/helpers/format-search-result'
+import { SearchDto } from 'src/helpers/search.dto'
 import {
   AddressEntity,
   CarpoolingGroupEntity,
@@ -26,6 +28,8 @@ import {
 } from 'src/typeorm/enums'
 import { WalletTransactionStatus } from 'src/typeorm/enums/wallet-transaction-status'
 import { TypeOrmService } from 'src/typeorm/typeorm.service'
+import { SearchResult } from 'src/types'
+import { Brackets } from 'typeorm'
 import { BaseService } from '../base/base.service'
 import { CarpoolingPaymentService } from '../carpooling-payment/carpooling-payment.service'
 import { UserService } from '../user/user.service'
@@ -191,6 +195,76 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
       carpoolingGroups: carpoolingGroupsWithValidAddresses,
       total: carpoolingGroupsWithValidAddresses.length,
     }
+  }
+
+  async searchCarpoolingGroups({
+    page,
+    limit,
+    search,
+    sort,
+    order,
+  }: SearchDto): Promise<SearchResult<CarpoolingGroupEntity>> {
+    const queryBuilder = this.getRepository()
+      .createQueryBuilder('carpoolingGroup')
+      .leftJoin('carpoolingGroup.driverUser', 'user')
+      .leftJoin('user.userProfile', 'userProfile')
+      .leftJoin('user.driver', 'driver')
+      .leftJoin('driver.vehicleForCarpooling', 'vehicleForCarpooling')
+      .leftJoinAndSelect('user.addresses', 'addresses')
+      .addSelect([
+        'user.id',
+        'userProfile.firstName',
+        'userProfile.lastName',
+        'userProfile.avatarURL',
+        'driver.id',
+        'vehicleForCarpooling.licensePlate',
+        'vehicleForCarpooling.numberOfSeats',
+        'vehicleForCarpooling.brand',
+        'vehicleForCarpooling.color',
+        'vehicleForCarpooling.photoURL',
+      ])
+      .loadRelationCountAndMap(
+        'carpoolingGroup.carpoolerCount',
+        'carpoolingGroup.carpoolers',
+      )
+      .where('carpoolingGroup.deletedAt IS NULL')
+
+    if (search) {
+      search = `%${search.toUpperCase()}%`
+
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          qb.where('UPPER(carpoolingGroup.groupName) LIKE :search', {
+            search,
+          })
+            .orWhere(
+              `UPPER(CONCAT(userProfile.firstName, ' ', userProfile.lastName)) LIKE :search`,
+              { search },
+            )
+            .orWhere('UPPER(vehicleForCarpooling.brand) LIKE :search', {
+              search,
+            })
+        }),
+      )
+    }
+
+    sort = sort.split('.').length > 1 ? sort : `carpoolingGroup.${sort}`
+    queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy(sort, order)
+
+    const [records, total] = await queryBuilder.getManyAndCount()
+
+    return formatSearchResult({
+      records,
+      page,
+      limit,
+      search,
+      sort,
+      order,
+      total,
+    })
   }
 
   async getCarpoolingGroupDetails(id: number): Promise<CarpoolingGroupEntity> {
