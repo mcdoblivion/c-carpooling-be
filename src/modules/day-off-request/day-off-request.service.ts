@@ -6,6 +6,7 @@ import {
 import { ConfigService } from '@nestjs/config'
 import * as Dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
+import { DayjsWeekDay } from 'src/constants/week-day'
 import { formatSearchResult } from 'src/helpers/format-search-result'
 import { SearchDto } from 'src/helpers/search.dto'
 import { DayOffRequestEntity } from 'src/typeorm/entities'
@@ -214,8 +215,8 @@ export class DayOffRequestService extends BaseService<DayOffRequestEntity> {
 
     return (
       Dayjs().startOf('day').isBefore(dayjsDate) &&
-      dayjsDate.day() !== 0 &&
-      dayjsDate.day() !== 6
+      dayjsDate.day() !== DayjsWeekDay.SATURDAY &&
+      dayjsDate.day() !== DayjsWeekDay.SUNDAY
     )
   }
 }

@@ -11,8 +11,10 @@ import {
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { UserFromRequest } from 'src/helpers/get-user-from-request.decorator'
+import { SearchDto } from 'src/helpers/search.dto'
 import { CarpoolingGroupEntity, UserEntity } from 'src/typeorm/entities'
 import { Role } from 'src/typeorm/enums'
+import { SearchResult } from 'src/types'
 import { Auth } from '../auth/decorators/auth.decorator'
 import { BaseController } from '../base/base.controller'
 import { CarpoolingGroupService } from './carpooling-group.service'
@@ -30,7 +32,7 @@ export class CarpoolingGroupController
   ) {}
 
   @Get()
-  findCarpoolingGroup(
+  findCarpoolingGroups(
     @Query() findCarpoolingGroupDto: FindCarpoolingGroupDto,
     @UserFromRequest() user: UserEntity,
   ) {
@@ -38,6 +40,14 @@ export class CarpoolingGroupController
       findCarpoolingGroupDto,
       user.id,
     )
+  }
+
+  @Auth()
+  @Get('search')
+  search(
+    @Query() searchDto: SearchDto,
+  ): Promise<SearchResult<CarpoolingGroupEntity>> {
+    return this.carpoolingGroupService.searchCarpoolingGroups(searchDto)
   }
 
   @Auth()

@@ -1,4 +1,5 @@
 import {
+  CacheInterceptor,
   CacheModule,
   Inject,
   LoggerService,
@@ -39,6 +40,7 @@ import { TypeOrmModule } from './typeorm/typeorm.module'
 import { TypeOrmService } from './typeorm/typeorm.service'
 import { StripeController } from './webhooks/stripe.controller'
 import { CarpoolingLogModule } from './modules/carpooling-log/carpooling-log.module'
+import { APP_INTERCEPTOR } from '@nestjs/core'
 
 const config = new ConfigService()
 
@@ -95,7 +97,12 @@ const config = new ConfigService()
     CarpoolingLogModule,
   ],
   controllers: [AppController, StripeController],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CacheInterceptor,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   constructor(
