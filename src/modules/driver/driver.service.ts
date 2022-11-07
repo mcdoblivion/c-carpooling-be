@@ -196,6 +196,24 @@ export class DriverService extends BaseService<DriverEntity> {
       )
     }
 
+    const existingVehicle = await this.vehicleService.findById(vehicleId)
+
+    if (!existingVehicle) {
+      throw new BadRequestException(
+        `Vehicle with ID ${vehicleId} does not exist!`,
+      )
+    }
+
+    if (existingVehicle.driverId !== driverId) {
+      throw new ForbiddenException('This vehicle is not your!')
+    }
+
+    if (!existingVehicle.isVerified) {
+      throw new BadRequestException(
+        'Only verified vehicle can be selected for carpooling!',
+      )
+    }
+
     return this.update(driverId, { vehicleIdForCarpooling: vehicleId })
   }
 
