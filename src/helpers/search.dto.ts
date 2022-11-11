@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
 import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
@@ -20,6 +21,9 @@ export class SearchDto {
   @IsOptional()
   search?: string
 
+  @ApiPropertyOptional({
+    type: 'json',
+  })
   @Transform((transformFunctionParams) =>
     JSON.parse(transformFunctionParams.value || '{}'),
   )
