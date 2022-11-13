@@ -71,16 +71,6 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
       )
     }
 
-    const vDepartureTime = Dayjs.utc(departureTime)
-      .startOf('minute')
-      .toISOString()
-      .split('T')[1]
-    const vComebackTime = Dayjs.utc(comebackTime)
-      .startOf('minute')
-      .startOf('minute')
-      .toISOString()
-      .split('T')[1]
-
     const queryBuilder = this.getRepository()
       .createQueryBuilder('carpoolingGroup')
       .leftJoin('carpoolingGroup.driverUser', 'user')
@@ -106,27 +96,27 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
       )
       .where('carpoolingGroup.deletedAt IS NULL')
       .andWhere(
-        `("carpoolingGroup"."departureTime"::TIME - CONCAT("carpoolingGroup"."delayDurationInMinutes", ' minutes')::INTERVAL ) <= :vDepartureTime::TIME`,
+        `("carpoolingGroup"."departureTime"::TIME - CONCAT("carpoolingGroup"."delayDurationInMinutes", ' minutes')::INTERVAL ) <= :departureTime::TIME`,
         {
-          vDepartureTime,
+          departureTime,
         },
       )
       .andWhere(
-        `("carpoolingGroup"."departureTime"::TIME + CONCAT("carpoolingGroup"."delayDurationInMinutes", ' minutes')::INTERVAL ) > :vDepartureTime::TIME`,
+        `("carpoolingGroup"."departureTime"::TIME + CONCAT("carpoolingGroup"."delayDurationInMinutes", ' minutes')::INTERVAL ) > :departureTime::TIME`,
         {
-          vDepartureTime,
+          departureTime,
         },
       )
       .andWhere(
-        `("carpoolingGroup"."comebackTime"::TIME - CONCAT("carpoolingGroup"."delayDurationInMinutes", ' minutes')::INTERVAL ) <= :vComebackTime::TIME`,
+        `("carpoolingGroup"."comebackTime"::TIME - CONCAT("carpoolingGroup"."delayDurationInMinutes", ' minutes')::INTERVAL ) <= :comebackTime::TIME`,
         {
-          vComebackTime,
+          comebackTime,
         },
       )
       .andWhere(
-        `("carpoolingGroup"."comebackTime"::TIME + CONCAT("carpoolingGroup"."delayDurationInMinutes", ' minutes')::INTERVAL ) > :vComebackTime::TIME`,
+        `("carpoolingGroup"."comebackTime"::TIME + CONCAT("carpoolingGroup"."delayDurationInMinutes", ' minutes')::INTERVAL ) > :comebackTime::TIME`,
         {
-          vComebackTime,
+          comebackTime,
         },
       )
 
@@ -170,7 +160,23 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
           'meters',
         )
 
-        return { ...carpoolingGroup, homeDistance, workDistance }
+        const departureTime = carpoolingGroup.departureTime
+          .split(':')
+          .slice(0, 2)
+          .join(':')
+
+        const comebackTime = carpoolingGroup.comebackTime
+          .split(':')
+          .slice(0, 2)
+          .join(':')
+
+        return {
+          ...carpoolingGroup,
+          homeDistance,
+          workDistance,
+          departureTime,
+          comebackTime,
+        }
       })
       .filter(
         ({

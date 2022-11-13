@@ -1,9 +1,9 @@
-import { IsDateString } from 'class-validator'
+import { IsMilitaryTime } from 'class-validator'
 
 export class FindCarpoolingGroupDto {
-  @IsDateString()
-  departureTime: Date
+  @IsMilitaryTime()
+  departureTime: string
 
-  @IsDateString()
-  comebackTime: Date
+  @IsMilitaryTime()
+  comebackTime: string
 }

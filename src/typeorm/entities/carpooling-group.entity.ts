@@ -27,10 +27,10 @@ export class CarpoolingGroupEntity extends BaseEntity {
   groupName: string
 
   @Column({ type: 'time without time zone' })
-  departureTime: Date
+  departureTime: string
 
   @Column({ type: 'time without time zone' })
-  comebackTime: Date
+  comebackTime: string
 
   @Column()
   delayDurationInMinutes: number

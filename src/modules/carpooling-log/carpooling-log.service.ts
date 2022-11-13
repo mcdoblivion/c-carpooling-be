@@ -59,7 +59,7 @@ export class CarpoolingLogService extends BaseService<CarpoolingLogEntity> {
 
     if (typeof isAbsent === 'boolean') {
       queryBuilder.andWhere('carpoolingLog.isAbsent = :isAbsent', {
-        isProcessed: isAbsent,
+        isAbsent,
       })
     }
 
