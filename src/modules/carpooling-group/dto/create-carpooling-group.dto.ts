@@ -1,14 +1,14 @@
-import { IsDateString, IsInt, IsPositive, IsString } from 'class-validator'
+import { IsInt, IsMilitaryTime, IsPositive, IsString } from 'class-validator'
 
 export class CreateCarpoolingGroupDto {
   @IsString()
   groupName: string
 
-  @IsDateString()
-  departureTime: Date
+  @IsMilitaryTime()
+  departureTime: string
 
-  @IsDateString()
-  comebackTime: Date
+  @IsMilitaryTime()
+  comebackTime: string
 
   @IsInt()
   @IsPositive()

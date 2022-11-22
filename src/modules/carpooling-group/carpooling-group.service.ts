@@ -318,7 +318,7 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
   }
 
   async createCarpoolingGroup(
-    { departureTime, comebackTime, ...rest }: CreateCarpoolingGroupDto,
+    createCarpoolingGroupDto: CreateCarpoolingGroupDto,
     driverUserId: number,
   ): Promise<CarpoolingGroupEntity> {
     const queryRunner = this.typeOrmService.createQueryRunner()
@@ -371,20 +371,8 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
         )
       }
 
-      const vDepartureTime = Dayjs.utc(departureTime)
-        .startOf('minute')
-        .toISOString()
-        .split('T')[1]
-
-      const vComebackTime = Dayjs.utc(comebackTime)
-        .startOf('minute')
-        .toISOString()
-        .split('T')[1]
-
       const carpoolingGroup = await carpoolingGroupRepository.save({
-        ...rest,
-        comebackTime: vComebackTime,
-        departureTime: vDepartureTime,
+        ...createCarpoolingGroupDto,
         driverUserId,
       })
 
