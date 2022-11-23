@@ -172,8 +172,8 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
 
         return {
           ...carpoolingGroup,
-          homeDistance,
-          workDistance,
+          homeDistance: Math.round(homeDistance),
+          workDistance: Math.round(workDistance),
           departureTime,
           comebackTime,
         }
