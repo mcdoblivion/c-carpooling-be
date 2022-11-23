@@ -33,6 +33,7 @@ export class CloudinaryService {
       this._bufferToBase64Uri(buffer, mimetype),
       {
         public_id: fileName,
+        resource_type: 'auto',
       },
     )
 

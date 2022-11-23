@@ -10,7 +10,10 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express'
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
-import { Auth } from './modules/auth/decorators/auth.decorator'
+import {
+  Auth,
+  AuthWithoutCompletedProfile,
+} from './modules/auth/decorators/auth.decorator'
 import { CloudinaryService } from './services/cloudinary/cloudinary.service'
 
 @ApiTags('Utilities')
@@ -27,6 +30,7 @@ export class AppController {
   }
 
   @Auth()
+  @AuthWithoutCompletedProfile()
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
