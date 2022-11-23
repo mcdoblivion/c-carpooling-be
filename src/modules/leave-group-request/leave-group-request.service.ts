@@ -165,9 +165,10 @@ export class LeaveGroupRequestService extends BaseService<LeaveGroupRequestEntit
     date: string,
     requestCreatedAt = new Date(),
   ): boolean {
-    const dayjsDate = Dayjs.utc(date).startOf('day')
+    const dayjsDate = Dayjs(date).utcOffset(7).endOf('day')
 
     return Dayjs(requestCreatedAt)
+      .utcOffset(7)
       .startOf('day')
       .add(this.minimumDaysToLeaveGroup, 'days')
       .isBefore(dayjsDate)
