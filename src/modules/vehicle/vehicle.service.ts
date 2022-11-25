@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
@@ -11,10 +13,15 @@ import { TypeOrmService } from 'src/typeorm/typeorm.service'
 import { SearchResult } from 'src/types'
 import { Brackets } from 'typeorm'
 import { BaseService } from '../base/base.service'
+import { DriverService } from '../driver/driver.service'
 
 @Injectable()
 export class VehicleService extends BaseService<VehicleEntity> {
-  constructor(private readonly typeOrmService: TypeOrmService) {
+  constructor(
+    private readonly typeOrmService: TypeOrmService,
+    @Inject(forwardRef(() => DriverService))
+    private readonly driverService: DriverService,
+  ) {
     super(typeOrmService.getRepository(VehicleEntity))
   }
 
@@ -89,7 +96,16 @@ export class VehicleService extends BaseService<VehicleEntity> {
   }
 
   async verifyVehicle(id: number): Promise<VehicleEntity> {
-    const existingVehicle = await this.findById(id)
+    const existingVehicle = await this.findOne(
+      { id },
+      {
+        relations: {
+          driver: {
+            vehicles: true,
+          },
+        },
+      },
+    )
 
     if (!existingVehicle) {
       throw new NotFoundException(`Vehicle with ID ${id} does not exist!`)
@@ -97,6 +113,16 @@ export class VehicleService extends BaseService<VehicleEntity> {
 
     if (existingVehicle.isVerified) {
       throw new BadRequestException(`Vehicle with ID has already verified!`)
+    }
+
+    const {
+      driver: { vehicles, id: driverId },
+    } = existingVehicle
+
+    if (vehicles.length === 1) {
+      await this.driverService.update(driverId, {
+        vehicleIdForCarpooling: id,
+      })
     }
 
     existingVehicle.isVerified = true

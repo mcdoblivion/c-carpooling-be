@@ -361,6 +361,12 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
         )
       }
 
+      if (!existingUser.driver.vehicleIdForCarpooling) {
+        throw new BadRequestException(
+          'You need to select a vehicle for carpooling before creating a group!',
+        )
+      }
+
       if (existingUser.carpoolingGroupId) {
         throw new BadRequestException('You are already in a carpooling group!')
       }

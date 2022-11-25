@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ForbiddenException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
@@ -23,6 +25,7 @@ import { UpdateDriverDto } from './dto/update-driver.dto'
 export class DriverService extends BaseService<DriverEntity> {
   constructor(
     private readonly typeOrmService: TypeOrmService,
+    @Inject(forwardRef(() => VehicleService))
     private readonly vehicleService: VehicleService,
     private readonly carpoolingGroupService: CarpoolingGroupService,
   ) {
