@@ -1,5 +1,4 @@
 import {
-  CacheInterceptor,
   CacheModule,
   Inject,
   LoggerService,
@@ -22,6 +21,7 @@ import { HttpLoggerMiddleware } from './helpers/http-logger.middleware'
 import { AddressModule } from './modules/address/address.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { CarpoolingGroupModule } from './modules/carpooling-group/carpooling-group.module'
+import { CarpoolingLogModule } from './modules/carpooling-log/carpooling-log.module'
 import { CarpoolingPaymentModule } from './modules/carpooling-payment/carpooling-payment.module'
 import { CronJobModule } from './modules/cron-job/cron-job.module'
 import { DayOffRequestModule } from './modules/day-off-request/day-off-request.module'
@@ -39,8 +39,6 @@ import { StripeModule } from './services/stripe/stripe.module'
 import { TypeOrmModule } from './typeorm/typeorm.module'
 import { TypeOrmService } from './typeorm/typeorm.service'
 import { StripeController } from './webhooks/stripe.controller'
-import { CarpoolingLogModule } from './modules/carpooling-log/carpooling-log.module'
-import { APP_INTERCEPTOR } from '@nestjs/core'
 
 const config = new ConfigService()
 
@@ -97,12 +95,6 @@ const config = new ConfigService()
     CarpoolingLogModule,
   ],
   controllers: [AppController, StripeController],
-  providers: [
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: CacheInterceptor,
-    },
-  ],
 })
 export class AppModule implements NestModule {
   constructor(
