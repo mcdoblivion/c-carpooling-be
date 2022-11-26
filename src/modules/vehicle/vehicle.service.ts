@@ -119,7 +119,7 @@ export class VehicleService extends BaseService<VehicleEntity> {
       driver: { vehicles, id: driverId },
     } = existingVehicle
 
-    if (vehicles.length === 1) {
+    if (vehicles?.length === 1) {
       await this.driverService.update(driverId, {
         vehicleIdForCarpooling: id,
       })
