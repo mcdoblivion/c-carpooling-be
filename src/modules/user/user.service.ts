@@ -176,7 +176,12 @@ export class UserService extends BaseService<UserEntity> {
 
   async createProfile(
     id: number,
-    { username, phoneNumber, userProfile }: UpdateUserFirstTimeDto,
+    {
+      username,
+      phoneNumber,
+      '2FAMethod': twoFAMethod,
+      userProfile,
+    }: UpdateUserFirstTimeDto,
   ): Promise<UserEntity> {
     const queryRunner =
       this.userRepository.manager.connection.createQueryRunner()
@@ -240,6 +245,7 @@ export class UserService extends BaseService<UserEntity> {
       }
 
       existingUser.phoneNumber = phoneNumber
+      existingUser['2FAMethod'] = twoFAMethod
 
       await userRepository.save(existingUser)
 
@@ -289,7 +295,12 @@ export class UserService extends BaseService<UserEntity> {
         throw new NotFoundException(`User with ID ${id} does not exist!`)
       }
 
-      const { username, phoneNumber, userProfile } = updateUserDto
+      const {
+        username,
+        phoneNumber,
+        '2FAMethod': twoFAMethod,
+        userProfile,
+      } = updateUserDto
 
       if (username) {
         const userWithSameUsername = await userRepository.findOne({
@@ -326,6 +337,8 @@ export class UserService extends BaseService<UserEntity> {
 
         existingUser.phoneNumber = phoneNumber
       }
+
+      existingUser['2FAMethod'] = twoFAMethod
 
       await userRepository.save(existingUser)
 

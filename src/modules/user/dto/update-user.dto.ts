@@ -22,6 +22,10 @@ export class UpdateUserFirstTimeDto {
   @IsPhoneNumber('VI')
   phoneNumber: string
 
+  @IsEnum(TwoFAMethod)
+  @IsOptional()
+  '2FAMethod': TwoFAMethod
+
   @ValidateNested()
   @Type(() => CreateUserProfileDto)
   userProfile: CreateUserProfileDto
@@ -36,6 +40,10 @@ export class UpdateUserDto {
   @IsPhoneNumber('VI')
   @IsOptional()
   phoneNumber: string
+
+  @IsEnum(TwoFAMethod)
+  @IsOptional()
+  '2FAMethod': TwoFAMethod
 
   @ValidateNested()
   @Type(() => UpdateUserProfileDto)
