@@ -115,18 +115,19 @@ export class VehicleService extends BaseService<VehicleEntity> {
       throw new BadRequestException(`Vehicle with ID has already verified!`)
     }
 
+    existingVehicle.isVerified = true
+    await this.getRepository().save(existingVehicle)
+
     const {
       driver: { vehicles, id: driverId },
     } = existingVehicle
 
     if (vehicles?.length === 1) {
-      await this.driverService.update(driverId, {
+      this.driverService.update(driverId, {
         vehicleIdForCarpooling: id,
       })
     }
 
-    existingVehicle.isVerified = true
-
-    return this.getRepository().save(existingVehicle)
+    return existingVehicle
   }
 }
