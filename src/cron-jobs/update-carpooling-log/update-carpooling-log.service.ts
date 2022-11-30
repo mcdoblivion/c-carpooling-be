@@ -127,6 +127,11 @@ export class UpdateCarpoolingLogService {
         },
         relations: {
           carpoolers: true,
+          driverUser: {
+            driver: {
+              vehicleForCarpooling: true,
+            },
+          },
         },
         lock: {
           mode: 'optimistic',
@@ -134,7 +139,14 @@ export class UpdateCarpoolingLogService {
         },
       })
 
-      const { carpoolers } = carpoolingGroup
+      const {
+        carpoolers,
+        driverUser: {
+          driver: {
+            vehicleForCarpooling: { numberOfSeats },
+          },
+        },
+      } = carpoolingGroup
       const carpoolerIds = carpoolers.map((carpooler) => carpooler.id)
 
       const [carpoolingFee, dayOffRequests] = await Promise.all([
@@ -149,29 +161,7 @@ export class UpdateCarpoolingLogService {
         }),
       ])
 
-      const numberOfCarpoolers = carpoolerIds.length
-
-      const homeToWorkCarpoolerCount =
-        numberOfCarpoolers -
-        dayOffRequests.filter(
-          (dayOffRequest) =>
-            dayOffRequest.directionType === DirectionType.HOME_TO_WORK,
-        ).length
-
-      const workToHomeCarpoolerCount =
-        numberOfCarpoolers -
-        dayOffRequests.filter(
-          (dayOffRequest) =>
-            dayOffRequest.directionType === DirectionType.WORK_TO_HOME,
-        ).length
-
-      const homeToWorkCarpoolingFeePerUser = Math.round(
-        carpoolingFee / homeToWorkCarpoolerCount,
-      )
-
-      const workToHomeCarpoolingFeePerUser = Math.round(
-        carpoolingFee / workToHomeCarpoolerCount,
-      )
+      const carpoolingFeePerUser = Math.round(carpoolingFee / numberOfSeats)
 
       const isDriverOffHomeToWork = !!dayOffRequests.find(
         (request) =>
@@ -202,13 +192,6 @@ export class UpdateCarpoolingLogService {
           const isAbsentHomeToWork = isDriverOffHomeToWork || isOffHomeToWork
           const isAbsentWorkToHome = isDriverOffWorkToHome || isOffWorkToHome
 
-          const homeToWorkCarpoolingFee = isAbsentHomeToWork
-            ? 0
-            : homeToWorkCarpoolingFeePerUser
-          const workToHomeCarpoolingFee = isAbsentWorkToHome
-            ? 0
-            : workToHomeCarpoolingFeePerUser
-
           return [
             ...promises,
 
@@ -218,7 +201,7 @@ export class UpdateCarpoolingLogService {
                 carpoolingGroupId,
                 date,
                 directionType: DirectionType.HOME_TO_WORK,
-                carpoolingFee: homeToWorkCarpoolingFee,
+                carpoolingFee: carpoolingFeePerUser,
                 isAbsent: isAbsentHomeToWork,
               },
               {
@@ -226,7 +209,7 @@ export class UpdateCarpoolingLogService {
                 carpoolingGroupId,
                 date,
                 directionType: DirectionType.WORK_TO_HOME,
-                carpoolingFee: workToHomeCarpoolingFee,
+                carpoolingFee: carpoolingFeePerUser,
                 isAbsent: isAbsentWorkToHome,
               },
             ]),

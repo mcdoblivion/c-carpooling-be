@@ -462,11 +462,7 @@ export class CarpoolingGroupService extends BaseService<CarpoolingGroupEntity> {
       rawPricePerMoveTurn +
       (rawPricePerMoveTurn * carpoolingFeeRateInPercentage) / 100
 
-    const numberOfCarpoolers = carpoolers.length + 1
-
-    const pricePerUserPerMoveTurn = Math.round(
-      pricePerMoveTurn / numberOfCarpoolers,
-    )
+    const pricePerUserPerMoveTurn = Math.round(pricePerMoveTurn / numberOfSeats)
 
     const remainingBusinessDaysInMonth =
       this.countRemainingBusinessDaysInMonth()
