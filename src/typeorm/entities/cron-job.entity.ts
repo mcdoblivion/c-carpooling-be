@@ -21,5 +21,5 @@ export class CronJobEntity extends BaseEntity {
   date: string
 
   @Column({ type: 'timestamp without time zone', nullable: true })
-  finishedAt: Date
+  finishedAt: string
 }

@@ -20,6 +20,10 @@ import { TypeOrmService } from 'src/typeorm/typeorm.service'
 import { In } from 'typeorm'
 Dayjs.extend(utc)
 
+type LinkedList = {
+  carpoolingGroupId: number
+  next: LinkedList | null
+}
 @Injectable()
 export class UpdateCarpoolingLogService {
   constructor(
@@ -39,68 +43,71 @@ export class UpdateCarpoolingLogService {
   })
   async updateCarpoolingLogs(cronJobId: number) {
     const dayjsDate = Dayjs().utcOffset(7).subtract(1, 'days')
-    const dateString = dayjsDate.format('YYYY-MM-DD')
+    let dateString = dayjsDate.format('YYYY-MM-DD')
 
     let cronJob: CronJobEntity
 
-    try {
-      if (cronJobId) {
-        cronJob = await this.cronJobService.findById(cronJobId)
+    if (cronJobId) {
+      cronJob = await this.cronJobService.findById(cronJobId)
 
-        if (!cronJob) {
-          this.logger.error(`Cron job with ID ${cronJobId} does not exist!`)
-          return
-        }
-      } else {
-        if (
-          dayjsDate.day() !== DayjsWeekDay.SATURDAY &&
-          dayjsDate.day() !== DayjsWeekDay.SUNDAY
-        ) {
-          cronJob = await this.cronJobService.create({
-            name: 'carpooling-logs',
-            description: 'Update carpooling logs',
-            type: CronJobType.CARPOOLING_LOG,
-            date: dateString,
-          })
-        } else {
-          return
-        }
+      if (!cronJob) {
+        this.logger.error(`Cron job with ID ${cronJobId} does not exist!`)
+        return
       }
 
-      this.logger.log(`Start updating carpooling logs for ${dateString}...`)
-
-      const carpoolingGroups = (await this.userService
-        .getRepository()
-        .createQueryBuilder('user')
-        .where('user.deletedAt IS NULL')
-        .andWhere('user.carpoolingGroupId IS NOT NULL')
-        .select('COUNT(user.carpoolingGroupId)', 'carpoolerCount')
-        .addSelect('user.carpoolingGroupId', 'carpoolingGroupId')
-        .groupBy('user.carpoolingGroupId')
-        .having('COUNT(user.carpoolingGroupId) > 1')
-        .getRawMany()) as Array<{ carpoolingGroupId: number; count: number }>
-
-      await Promise.all(
-        carpoolingGroups.map((carpoolingGroup) =>
-          this._updateCarpoolingLogs(
-            carpoolingGroup.carpoolingGroupId,
-            dateString,
-          ),
-        ),
-      )
-
-      cronJob.finishedAt = new Date()
-
-      await this.cronJobService.getRepository().save(cronJob)
-
-      this.logger.log(`Successfully updated carpooling logs for ${dateString}!`)
-    } catch (error) {
-      this.logger.error(`Failed to update carpooling logs for ${dateString}!`)
-      this.logger.error(error)
+      dateString = cronJob.date
+    } else {
+      if (
+        dayjsDate.day() !== DayjsWeekDay.SATURDAY &&
+        dayjsDate.day() !== DayjsWeekDay.SUNDAY
+      ) {
+        cronJob = await this.cronJobService.create({
+          name: 'carpooling-logs',
+          description: 'Update carpooling logs',
+          type: CronJobType.CARPOOLING_LOG,
+          date: dateString,
+        })
+      } else {
+        return
+      }
     }
+
+    this.logger.log(`Start updating carpooling logs for ${dateString}...`)
+
+    const carpoolingGroups = (await this.userService
+      .getRepository()
+      .createQueryBuilder('user')
+      .where('user.deletedAt IS NULL')
+      .andWhere('user.carpoolingGroupId IS NOT NULL')
+      .select('COUNT(user.carpoolingGroupId)', 'carpoolerCount')
+      .addSelect('user.carpoolingGroupId', 'carpoolingGroupId')
+      .groupBy('user.carpoolingGroupId')
+      .having('COUNT(user.carpoolingGroupId) > 1')
+      .getRawMany()) as Array<{ carpoolingGroupId: number; count: number }>
+
+    const carpoolingGroupLinkedList: LinkedList = {
+      carpoolingGroupId: carpoolingGroups[0].carpoolingGroupId,
+      next: null,
+    }
+    let currentNode = carpoolingGroupLinkedList
+
+    for (let i = 1; i < carpoolingGroups.length; i++) {
+      currentNode.next = {
+        carpoolingGroupId: carpoolingGroups[i].carpoolingGroupId,
+        next: null,
+      }
+
+      currentNode = currentNode.next
+    }
+
+    this._updateCarpoolingLogs(carpoolingGroupLinkedList, dateString, cronJobId)
   }
 
-  private async _updateCarpoolingLogs(carpoolingGroupId: number, date: string) {
+  private async _updateCarpoolingLogs(
+    { carpoolingGroupId, next }: LinkedList,
+    date: string,
+    cronJobId: number,
+  ) {
     const queryRunner = this.typeOrmService.createQueryRunner()
     await queryRunner.connect()
     await queryRunner.startTransaction()
@@ -244,12 +251,21 @@ export class UpdateCarpoolingLogService {
       ])
 
       await queryRunner.commitTransaction()
-      return true
     } catch (error) {
       await queryRunner.rollbackTransaction()
       throw error
     } finally {
       queryRunner.release()
+    }
+
+    if (next) {
+      setTimeout(() => this._updateCarpoolingLogs(next, date, cronJobId), 1000)
+    } else {
+      await this.cronJobService.update(cronJobId, {
+        finishedAt: new Date().toISOString(),
+      })
+
+      this.logger.log(`Successfully updated carpooling logs for ${date}!`)
     }
   }
 

@@ -67,7 +67,7 @@ export class LeaveGroupRequestService {
         ),
       )
 
-      cronJob.finishedAt = new Date()
+      cronJob.finishedAt = new Date().toISOString()
 
       await this.cronJobService.getRepository().save(cronJob)
 
