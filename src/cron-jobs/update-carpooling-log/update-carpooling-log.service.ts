@@ -100,7 +100,11 @@ export class UpdateCarpoolingLogService {
       currentNode = currentNode.next
     }
 
-    this._updateCarpoolingLogs(carpoolingGroupLinkedList, dateString, cronJobId)
+    this._updateCarpoolingLogs(
+      carpoolingGroupLinkedList,
+      dateString,
+      cronJob.id,
+    )
   }
 
   private async _updateCarpoolingLogs(
@@ -195,24 +199,35 @@ export class UpdateCarpoolingLogService {
           return [
             ...promises,
 
-            carpoolingLogRepository.insert([
+            carpoolingLogRepository.upsert(
+              [
+                {
+                  userId: carpoolerId,
+                  carpoolingGroupId,
+                  date,
+                  directionType: DirectionType.HOME_TO_WORK,
+                  carpoolingFee: carpoolingFeePerUser,
+                  isAbsent: isAbsentHomeToWork,
+                },
+                {
+                  userId: carpoolerId,
+                  carpoolingGroupId,
+                  date,
+                  directionType: DirectionType.WORK_TO_HOME,
+                  carpoolingFee: carpoolingFeePerUser,
+                  isAbsent: isAbsentWorkToHome,
+                },
+              ],
               {
-                userId: carpoolerId,
-                carpoolingGroupId,
-                date,
-                directionType: DirectionType.HOME_TO_WORK,
-                carpoolingFee: carpoolingFeePerUser,
-                isAbsent: isAbsentHomeToWork,
+                conflictPaths: [
+                  'userId',
+                  'carpoolingGroupId',
+                  'date',
+                  'directionType',
+                ],
+                skipUpdateIfNoValuesChanged: true,
               },
-              {
-                userId: carpoolerId,
-                carpoolingGroupId,
-                date,
-                directionType: DirectionType.WORK_TO_HOME,
-                carpoolingFee: carpoolingFeePerUser,
-                isAbsent: isAbsentWorkToHome,
-              },
-            ]),
+            ),
           ]
         },
         [],
