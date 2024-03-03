@@ -35,35 +35,14 @@ export class AuthController {
     }
   }
 
-  @Post('verify-signup')
-  async verifySignup(@Body('otp') otp: string) {
-    try {
-      return await this.authService.createNewAccount(otp)
-    } catch (error) {
-      this.logger.error('Error when verifying signup!')
-      throw error
-    }
-  }
-
   @UseGuards(LocalAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(@Request() req: { user: UserEntity }, @Body('otp') otp: string) {
+  async login(@Request() req: { user: UserEntity }) {
     try {
-      return await this.authService.login(req.user, otp)
+      return await this.authService.login(req.user)
     } catch (error) {
       this.logger.error('Error when login!')
-      throw error
-    }
-  }
-
-  @Post('google-login')
-  @HttpCode(HttpStatus.OK)
-  async googleLogin(@Body('token') token: string) {
-    try {
-      return await this.authService.validateGoogleToken(token)
-    } catch (error) {
-      this.logger.error('Error when validating google token!')
       throw error
     }
   }

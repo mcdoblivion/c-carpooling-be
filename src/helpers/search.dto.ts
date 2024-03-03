@@ -1,5 +1,5 @@
-import { Transform, Type } from 'class-transformer'
-import { IsIn, IsInt, IsObject, IsOptional, IsString } from 'class-validator'
+import { Transform } from 'class-transformer'
+import { IsIn, IsInt, IsOptional, IsString } from 'class-validator'
 
 export class SearchDto {
   @Transform((transformFunctionParams) =>

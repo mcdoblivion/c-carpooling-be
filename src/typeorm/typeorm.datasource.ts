@@ -12,7 +12,6 @@ const dataSource = new DataSource({
   username: config.get<string>('DB_USER'),
   password: config.get<string>('DB_PASSWORD'),
   database: config.get<string>('DB_DATABASE'),
-  ssl: { rejectUnauthorized: false },
   migrations: ['src/typeorm/migrations/*{.ts,.js}'],
   entities,
 })

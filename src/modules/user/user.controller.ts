@@ -3,15 +3,12 @@ import {
   Controller,
   ForbiddenException,
   Get,
-  HttpCode,
-  HttpStatus,
   Inject,
   LoggerService,
   Param,
   ParseIntPipe,
-  Post,
+  Patch,
   Put,
-  Query,
 } from '@nestjs/common'
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
 import { UserFromRequest } from 'src/helpers/get-user-from-request.decorator'
@@ -19,18 +16,9 @@ import { SearchDto } from 'src/helpers/search.dto'
 import { UserEntity } from 'src/typeorm/entities'
 import { Role } from 'src/typeorm/enums'
 import { SearchResult } from 'src/types'
-import {
-  Auth,
-  AuthWithoutCompletedProfile,
-  Public,
-} from '../auth/decorators/auth.decorator'
+import { Auth } from '../auth/decorators/auth.decorator'
 import { BaseController } from '../base/base.controller'
-import { CreateNewPasswordDto } from './dto/create-new-password.dto'
-import {
-  UpdateUserDto,
-  UpdateUserFirstTimeDto,
-  UpdateUserPasswordDto,
-} from './dto/update-user.dto'
+import { UpdateUserDto, UpdateUserPasswordDto } from './dto/update-user.dto'
 import { UserService } from './user.service'
 
 @Auth()
@@ -41,17 +29,14 @@ export class UserController implements BaseController<UserEntity> {
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {}
-
-  @Auth(Role.ADMIN)
-  @Get()
-  search(@Query() searchDto: SearchDto): Promise<SearchResult<UserEntity>> {
-    return this.usersService.searchUsers(searchDto)
-  }
-
-  @Auth(Role.ADMIN)
-  @Get('all')
   getAll(): Promise<UserEntity[]> {
-    return this.usersService.findAll({})
+    throw new Error('Method not implemented.')
+  }
+  search(searchDto: SearchDto): Promise<SearchResult<UserEntity>> {
+    throw new Error('Method not implemented.')
+  }
+  create(createDto: Record<string, any>): Promise<UserEntity> {
+    throw new Error('Method not implemented.')
   }
 
   @Get('me')
@@ -65,18 +50,7 @@ export class UserController implements BaseController<UserEntity> {
     return this.usersService.getUserDetails(id)
   }
 
-  create(createDto: Record<string, any>): Promise<UserEntity> {
-    throw new Error('Method not implemented.')
-  }
-
-  @Public()
-  @Post('password')
-  @HttpCode(HttpStatus.OK)
-  createNewPassword(@Body() createNewPasswordDto: CreateNewPasswordDto) {
-    return this.usersService.createNewPassword(createNewPasswordDto)
-  }
-
-  @Put(':id')
+  @Patch(':id')
   updateOneById(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateUserDto,
@@ -91,15 +65,6 @@ export class UserController implements BaseController<UserEntity> {
     }
 
     return this.usersService.updateUser(id, updateDto)
-  }
-
-  @AuthWithoutCompletedProfile()
-  @Post(':id/profile')
-  createProfile(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateUserFirstTimeDto: UpdateUserFirstTimeDto,
-  ): Promise<UserEntity> {
-    return this.usersService.createProfile(id, updateUserFirstTimeDto)
   }
 
   @Put(':id/password')

@@ -8,18 +8,15 @@ import {
 } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import {
-  utilities as nestWinstonModuleUtilities,
-  WinstonModule,
   WINSTON_MODULE_NEST_PROVIDER,
+  WinstonModule,
+  utilities as nestWinstonModuleUtilities,
 } from 'nest-winston'
 import * as winston from 'winston'
 import { AppController } from './app.controller'
 import { HttpLoggerMiddleware } from './helpers/http-logger.middleware'
 import { AuthModule } from './modules/auth/auth.module'
 import { UserModule } from './modules/user/user.module'
-import { S3Module } from './services/aws/s3.module'
-import { MailModule } from './services/mail/mail.module'
-import { SmsModule } from './services/sms/sms.module'
 import { TypeOrmModule } from './typeorm/typeorm.module'
 import { TypeOrmService } from './typeorm/typeorm.service'
 
@@ -55,9 +52,6 @@ const config = new ConfigService()
       isGlobal: true,
     }),
     TypeOrmModule,
-    S3Module,
-    MailModule,
-    SmsModule,
     AuthModule,
     UserModule,
   ],
